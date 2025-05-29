@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create New Speaker</title>
+  <link rel="stylesheet" href="../../cssStyles/adminDashboard.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      padding: 2rem;
+    }
+
+    .form-container {
+      max-width: 600px;
+      margin: 4rem auto 2rem auto;
+      background-color: #ffffff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input[type="text"], select {
+      width: 100%;
+      padding: 0.6rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #fefefe;
+    }
+
+    .mobile-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .mobile-group input {
+      flex: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    /* Back button at top-right */
+    /* #backBtn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      background-color: #34495e;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background-color 0.3s ease;
+    } */
+    /* #backBtn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      background-color: #34495e;
+      color: white;
+      padding: 10px 16px;
+      padding: 8px 12px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
+      transition: background-color 0.3s ease;
+      display: inline-block; /* ✅ Fix: ensures button is inline, not full-width */
+    } */
+
+    /* #backBtn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      background-color: #34495e;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: inline-block;
+    } */
+    #backBtn {
+  position: fixed;
+  top: 20px;
+  right: 30px;
+  background-color: #34495e;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: inline-block;
+  width: auto !important;      /* ✅ Force small width */
+  max-width: 200px;            /* ✅ Prevent full width */
+  white-space: nowrap;
+}
+
+    #backBtn:hover {
+      background-color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ Correct path for dashboard navigation -->
+  <button id="backBtn" onclick="window.location.href='adminDashboardUi.html'" title="Back to Dashboard" style="position: fixed; top: 20px; right: 30px; background-color: #34495e; color: white; padding: 8px 14px; border-radius: 25px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: inline-block; width: auto; white-space: nowrap;" >
+    ← Dashboard</button>
+
+  <!-- <button
+    id="backBtn"
+    onclick="window.location.href='/views/admin/adminDashboard.html'"
+    style="position: fixed; top: 20px; right: 30px; background-color: #34495e; color: white; padding: 8px 14px; border-radius: 25px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; display: inline-block; width: auto; white-space: nowrap;"
+  >← Dashboard</button> -->
+  <div class="form-container">
+    <h2>Create New Speaker</h2>
+    <div class="form-group">
+      <label for="name">Name</label>
+      <input id="name" type="text" placeholder="Enter full name" />
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input id="email" type="text" placeholder="Enter email address" />
+    </div>
+
+    <div class="form-group">
+      <label for="country">Country</label>
+      <select id="country"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="mobile">Mobile Number</label>
+      <div class="mobile-group">
+        <input id="countryCode" type="text" readonly style="width: 80px;" />
+        <input id="mobile" type="text" placeholder="Enter mobile number" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="gender">Gender</label>
+      <select id="gender">
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="role">Role</label>
+      <select id="role">
+        <option value="Speaker">Speaker</option>
+        <option value="Admin">Admin</option>
+        <option value="Both">Both</option>
+      </select>
+    </div>
+
+    <button onclick="createSpeaker()">Create Speaker</button>
+  </div>
+
+  <script>
+    const countrySelect = document.getElementById("country");
+    const countryCodeInput = document.getElementById("countryCode");
+
+    const countries = [
+      { name: "India", code: "+91" },
+      { name: "United States", code: "+1" },
+      { name: "United Kingdom", code: "+44" },
+      { name: "Australia", code: "+61" },
+      { name: "Canada", code: "+1" },
+      { name: "Germany", code: "+49" },
+      { name: "France", code: "+33" },
+      { name: "China", code: "+86" },
+      { name: "Japan", code: "+81" },
+      { name: "Brazil", code: "+55" },
+      { name: "Russia", code: "+7" },
+      { name: "South Africa", code: "+27" },
+      { name: "Indonesia", code: "+62" },
+      { name: "Mexico", code: "+52" },
+      { name: "Italy", code: "+39" },
+      { name: "Spain", code: "+34" },
+      { name: "Netherlands", code: "+31" },
+      { name: "Sweden", code: "+46" },
+      { name: "Singapore", code: "+65" },
+      { name: "New Zealand", code: "+64" }
+    ];
+
+    countries.forEach(country => {
+      const option = document.createElement("option");
+      option.value = country.code;
+      option.textContent = country.name;
+      countrySelect.appendChild(option);
+    });
+
+    countrySelect.addEventListener("change", () => {
+      countryCodeInput.value = countrySelect.value;
+    });
+
+    function createSpeaker() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const country = countrySelect.options[countrySelect.selectedIndex].text;
+      const countryCode = countrySelect.value;
+      const mobile = document.getElementById('mobile').value.trim();
+      const gender = document.getElementById('gender').value.toLowerCase();
+      const role = document.getElementById('role').value.toLowerCase();
+
+      if (!name || !email || !country || !mobile || !gender || !role) {
+        alert("Please fill all the fields.");
+        return;
+      }
+
+      const createdAt = new Date().toISOString();
+      const speakerData = {
+        name,
+        email,
+        country,
+        mobile: `${countryCode}${mobile}`,
+        gender,
+        role,
+        createdAt
+      };
+
+      fetch('/admin/create-speaker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(speakerData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert("Speaker created successfully!");
+        window.location.href = "listSpeakers.html";
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error creating speaker.");
+      });
+    }
+  </script>
+</body>
+</html>

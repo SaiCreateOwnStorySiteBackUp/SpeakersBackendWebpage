@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Speaker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+    .form-container {
+      max-width: 500px;
+      margin: auto;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+    }
+    .btn-group {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .update-btn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+    }
+    .cancel-btn {
+      background-color: #f44336;
+      color: white;
+      border: none;
+    }
+    .warning-border {
+      border: 2px solid red;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <h2>Edit Speaker</h2>
+    <form id="editForm">
+      <label for="name">Name</label>
+      <input type="text" id="name" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" required disabled>
+
+      <label for="country">Country</label>
+      <input type="text" id="country" required>
+
+      <label for="mobile">Mobile</label>
+      <input type="text" id="mobile" required>
+
+      <label for="gender">Gender</label>
+      <select id="gender" required>
+        <option value="">Select Gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label for="role">Role</label>
+      <select id="role" required>
+        <option value="">Select Role</option>
+        <option value="speaker">Speaker</option>
+        <option value="both">Both</option>
+      </select>
+
+      <div class="btn-group">
+        <button type="submit" class="update-btn">Update</button>
+        <button type="button" class="cancel-btn" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const speakerData = JSON.parse(localStorage.getItem('editSpeaker'));
+    if (!speakerData) {
+      alert("No speaker data found.");
+      window.location.href = '/admin/updateSpeaker.html';
+    }
+
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const countryInput = document.getElementById('country');
+    const mobileInput = document.getElementById('mobile');
+    const genderInput = document.getElementById('gender');
+    const roleInput = document.getElementById('role');
+
+    const cutoff = new Date('2025-05-24T14:37:08.000Z');
+    const createdAt = new Date(speakerData.createdAt);
+    const isLegacy = createdAt < cutoff;
+
+    function autoFillMissingFieldsIfLegacy() {
+      if (isLegacy) {
+        if (!speakerData.country) {
+          countryInput.value = 'Unknown';
+          countryInput.classList.add('warning-border');
+        } else {
+          countryInput.value = speakerData.country;
+        }
+
+        if (!speakerData.mobile) {
+          mobileInput.value = '9999999999';
+          mobileInput.classList.add('warning-border');
+        } else {
+          mobileInput.value = speakerData.mobile;
+        }
+
+        if (!speakerData.gender) {
+          genderInput.value = 'other';
+          genderInput.classList.add('warning-border');
+        } else {
+          genderInput.value = speakerData.gender;
+        }
+      } else {
+        countryInput.value = speakerData.country || '';
+        mobileInput.value = speakerData.mobile || '';
+        genderInput.value = speakerData.gender || '';
+      }
+    }
+
+    // Pre-fill form
+    nameInput.value = speakerData.name || '';
+    emailInput.value = speakerData.email || '';
+    roleInput.value = speakerData.role || '';
+
+    autoFillMissingFieldsIfLegacy();
+
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const updatedSpeaker = {
+        name: nameInput.value,
+        country: countryInput.value,
+        mobile: mobileInput.value,
+        gender: genderInput.value,
+        role: roleInput.value
+      };
+
+      try {
+        const response = await fetch(`/admin/update-speaker/${speakerData._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedSpeaker)
+        });
+
+        if (response.ok) {
+          alert('Speaker updated successfully');
+          localStorage.removeItem('editSpeaker');
+          window.location.href = '/admin/updateSpeaker.html';
+        } else {
+          const error = await response.text();
+          alert('Update failed: ' + error);
+        }
+      } catch (err) {
+        alert('Error updating speaker: ' + err.message);
+      }
+    });
+
+    function cancelEdit() {
+      localStorage.removeItem('editSpeaker');
+      window.location.href = '/admin/updateSpeaker.html';
+    }
+  </script>
+</body>
+</html>

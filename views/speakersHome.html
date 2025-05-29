@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Speaker Dashboard</title>
+  <link rel="stylesheet" href="/cssStyles/speakerCssStyle.css"/>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .welcome {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    .dashboard-buttons {
+      margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      font-weight: bold;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .form-container, .edit-container {
+      margin-top: 30px;
+      display: none;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .story-box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #fff;
+    }
+    .story-actions button {
+      margin-left: 10px;
+      background-color: #28a745;
+    }
+    .story-actions .delete-btn {
+      background-color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="welcome">Welcome, <span id="speakerName">...</span></div>
+  <div><img id="speakerImg" src="/public/images/default.jpg" width="50" height="50" style="border-radius: 50%"/></div>
+</header>
+
+<div class="dashboard-buttons">
+  <button onclick="showCreate()">Create Story</button>
+  <button onclick="showEdit()">Edit Story</button>
+</div>
+
+<button onclick="logout()">Logout</button>
+
+<!-- Edit Section Placeholder (if needed in future) -->
+<div class="edit-container" id="editSection" style="display:none;">
+  <h3>Edit Existing Stories</h3>
+</div>
+
+<script>
+  const email = localStorage.getItem("email");
+  if (!email) {
+    alert("You must log in first!");
+    window.location.href = "login.html";
+  } else {
+    fetch(`/users/email/${encodeURIComponent(email)}`)
+      .then(response => {
+        if (!response.ok) throw new Error('User not found');
+        return response.json();
+      })
+      .then(data => {
+        const user = data.user || data;
+        document.getElementById("speakerName").innerText = user.name || email;
+        document.getElementById("speakerImg").src = user.profileImage || "/public/images/default.jpg";
+      })
+      .catch(error => {
+        console.error("Error fetching user:", error);
+        document.getElementById("speakerName").innerText = email;
+        document.getElementById("speakerImg").src = "/public/images/default.jpg";
+      });
+  }
+
+  function showCreate() {
+    window.location.href = "speakerDashboardCreateButton.html";
+  }
+
+  function showEdit() {
+    window.location.href = "speakersEditButton.html";
+  }
+  function logout() {
+    localStorage.removeItem("email");
+    window.location.href = "login.html";
+  }
+</script>
+
+</body>
+</html>

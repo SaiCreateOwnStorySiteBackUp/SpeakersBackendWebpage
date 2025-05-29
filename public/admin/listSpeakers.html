@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>List of Speakers</title>
+  <link rel="stylesheet" href="../../cssStyles/adminDashboard.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f7f9fb;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+
+    #speakerList {
+      max-width: 900px;
+      margin: 0 auto;
+      min-height: 400px;
+    }
+
+    .speaker-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-left: 6px solid #3498db;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+      font-size: 1.5em;
+      margin-bottom: 16px;
+      color: #34495e;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 5px;
+    }
+
+    .speaker-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fefefe;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .speaker-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .speaker-info {
+      flex: 1;
+      line-height: 1.6;
+      color: #2c3e50;
+    }
+
+    .speaker-info strong {
+      color: #34495e;
+    }
+
+    .actions button {
+      margin-left: 10px;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.9em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .enable-btn {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    .enable-btn:hover {
+      background-color: #27ae60;
+    }
+
+    .disable-btn {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .disable-btn:hover {
+      background-color: #c0392b;
+    }
+
+    /* Pagination Styles */
+    #pagination {
+      max-width: 900px;
+      margin: 20px auto 40px;
+      text-align: center;
+    }
+
+    #pagination button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      margin: 0 5px;
+      padding: 8px 14px;
+      font-size: 1em;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #pagination button:hover:not(.active) {
+      background-color: #2980b9;
+    }
+
+    #pagination button.active {
+      background-color: #2c3e50;
+      cursor: default;
+    }
+
+    /* Back button - now top-right */
+    #backBtn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      background-color: #34495e;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      display: static; /* Hidden initially */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background-color 0.3s ease;
+    }
+
+    #backBtn:hover {
+      background-color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  <h1>List of Speakers</h1>
+  <button id="backBtn" title="Back to Dashboard">← Dashboard</button>
+  <div id="speakerList"></div>
+  <div id="pagination"></div>
+
+  <script>
+    const SPEAKERS_PER_PAGE = 3;
+    let speakersData = [];
+    let currentPage = 1;
+
+    async function fetchSpeakers() {
+      try {
+        const response = await fetch('/users/speakers');
+        speakersData = await response.json();
+        currentPage = 1;
+        renderPage(currentPage);
+        renderPagination();
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      }
+    }
+
+    function renderPage(page) {
+      const listDiv = document.getElementById('speakerList');
+      listDiv.innerHTML = '';
+
+      const startIndex = (page - 1) * SPEAKERS_PER_PAGE;
+      const endIndex = startIndex + SPEAKERS_PER_PAGE;
+      const pageSpeakers = speakersData.slice(startIndex, endIndex);
+
+      const grouped = {};
+      pageSpeakers.forEach(user => {
+        if (!grouped[user.name]) grouped[user.name] = [];
+        grouped[user.name].push(user);
+      });
+
+      Object.keys(grouped).forEach(name => {
+        const section = document.createElement('div');
+        section.className = 'speaker-section';
+
+        const title = document.createElement('div');
+        title.className = 'section-title';
+        title.textContent = `Speaker: ${name}`;
+        section.appendChild(title);
+
+        grouped[name].forEach(user => {
+          const isEnabled = user.isEnabled;
+
+          const card = document.createElement('div');
+          card.className = 'speaker-card';
+
+          card.innerHTML = `
+            <div class="speaker-info">
+              <strong>Email:</strong> ${user.email || 'N/A'}<br>
+              <strong>Mobile:</strong> ${user.mobile || 'N/A'}<br>
+              <strong>Country:</strong> ${user.country || 'N/A'}<br>
+              <strong>Role:</strong> ${user.role || 'N/A'}<br>
+              <strong>Created At:</strong> ${user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}<br>
+              <strong>Status:</strong> ${isEnabled ? '✅ Enabled' : '❌ Disabled'}
+            </div>
+            <div class="actions">
+              <button class="${isEnabled ? 'disable-btn' : 'enable-btn'}"
+                      onclick="toggleStatus('${user._id}', ${!isEnabled})">
+                ${isEnabled ? 'Disable' : 'Enable'}
+              </button>
+            </div>
+          `;
+
+          section.appendChild(card);
+        });
+
+        listDiv.appendChild(section);
+      });
+    }
+
+    function renderPagination() {
+      const paginationDiv = document.getElementById('pagination');
+      paginationDiv.innerHTML = '';
+
+      const totalPages = Math.ceil(speakersData.length / SPEAKERS_PER_PAGE);
+      if (totalPages <= 1) return;
+
+      // First <<
+      const firstBtn = document.createElement('button');
+      firstBtn.textContent = '<<';
+      firstBtn.disabled = currentPage === 1;
+      firstBtn.onclick = () => {
+        currentPage = 1;
+        renderPage(currentPage);
+        renderPagination();
+        scrollToTop();
+      };
+      paginationDiv.appendChild(firstBtn);
+
+      // Prev
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = '< Prev';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => {
+        currentPage--;
+        renderPage(currentPage);
+        renderPagination();
+        scrollToTop();
+      };
+      paginationDiv.appendChild(prevBtn);
+
+      // Page numbers
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        if (i === currentPage) pageBtn.className = 'active';
+        pageBtn.onclick = () => {
+          currentPage = i;
+          renderPage(currentPage);
+          renderPagination();
+          scrollToTop();
+        };
+        paginationDiv.appendChild(pageBtn);
+      }
+
+      // Next
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next >';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => {
+        currentPage++;
+        renderPage(currentPage);
+        renderPagination();
+        scrollToTop();
+      };
+      paginationDiv.appendChild(nextBtn);
+
+      // Last >>
+      const lastBtn = document.createElement('button');
+      lastBtn.textContent = '>>';
+      lastBtn.disabled = currentPage === totalPages;
+      lastBtn.onclick = () => {
+        currentPage = totalPages;
+        renderPage(currentPage);
+        renderPagination();
+        scrollToTop();
+      };
+      paginationDiv.appendChild(lastBtn);
+    }
+
+    async function toggleStatus(userId, newStatus) {
+      try {
+        await fetch(`/admin/users/${userId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isEnabled: newStatus })
+        });
+
+        const idx = speakersData.findIndex(u => u._id === userId);
+        if (idx !== -1) speakersData[idx].isEnabled = newStatus;
+
+        renderPage(currentPage);
+        renderPagination();
+      } catch (err) {
+        console.error('Error updating status:', err);
+      }
+    }
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    const backBtn = document.getElementById('backBtn');
+    // window.addEventListener('scroll', () => {
+    //   backBtn.style.display = window.scrollY > 150 ? 'block' : 'none';
+    // });
+
+    backBtn.addEventListener('click', () => {
+      window.location.href = 'adminDashboardUi.html';
+    });
+
+    fetchSpeakers();
+  </script>
+</body>
+</html>

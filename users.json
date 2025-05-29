@@ -1,7 +1,0 @@
-{"_id":{"$oid":"682975b818d846f9b96c4bd0"},"name":"Sai","email":"sai@gmail.com","password":"admin@123","role":"admin"}
-{"_id":{"$oid":"682975b818d846f9b96c4bd1"},"name":"Cherana","email":"cherana@gmail.com","password":"cherana@123","role":"speaker","allowedPage":"cherana","isEnabled":true,"updatedAt":{"$date":"2025-05-25T17:17:36.451Z"}}
-{"_id":{"$oid":"682975b818d846f9b96c4bd2"},"name":"Sadhana","email":"sadhana@gmail.com","password":"sadhana@123","role":"speaker","allowedPage":"sadhana"}
-{"_id":{"$oid":"682975b818d846f9b96c4bd3"},"name":"Muni","email":"muni@gmail.com","password":"muni@123","role":"speaker","allowedPage":"muni"}
-{"_id":{"$oid":"682975b818d846f9b96c4bd4"},"name":"Nikitha","email":"nikitha@gmail.com","password":"nikitha@123","role":"speaker","allowedPage":"nikitha"}
-{"_id":{"$oid":"6831d9940f017f32c76c4bd0"},"name":"Sesha Sai","email":"seshasaim72@gmail.com","country":"India","mobile":"+918296179894","gender":"Male","role":"admin","password":"$2b$10$apRq9pKWrIKfb8eVypcuZ.pb5EwwWvtkDDD3lsVxnxoGl8cfgBUWm","status":"active"}
-{"_id":{"$oid":"6837027721b5779c6d13c18a"},"name":"seshu","email":"mallamuruvenkat@gmail.com","password":"$2b$10$CRQ4YifhPPEiuZJAvRLVtuK7C62e9QQ2McK0KH/TD9J.l5OF/VSiC","role":"speaker","country":"India","mobile":"+919741777494","gender":"male","allowedPage":true,"isEnabled":true,"createdAt":{"$date":"2025-05-28T12:32:55.113Z"},"updatedAt":{"$date":"2025-05-28T12:39:43.661Z"},"__v":0}

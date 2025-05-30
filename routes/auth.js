@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const User = require('../models/user');
 const bcrypt = require('bcrypt');
 const { sendEmail } = require('../utils/mailer');
 
@@ -15,14 +15,15 @@ function isAdmin(req, res, next) {
 }
 
 // 🔧 Utility: Generate random password (alphanumeric, max 10 characters)
-function generateRandomPassword(length = 10) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let pwd = '';
-  for (let i = 0; i < length; i++) {
-    pwd += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return pwd;
-}
+// function generateRandomPassword(length = 10) {
+//   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+//   let pwd = '';
+//   for (let i = 0; i < length; i++) {
+//     pwd += chars[Math.floor(Math.random() * chars.length)];
+//   }
+//   return pwd;
+// }
+const { generateRandomPassword } = require('../utils/passwordGenerator');
 
 // ✅ POST: Login route
 router.post('/login', async (req, res) => {

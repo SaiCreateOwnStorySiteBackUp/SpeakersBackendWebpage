@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -6,8 +7,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 app.use(cors());
 
-// Connect to MongoDB (updated for Mongoose 6+)
-mongoose.connect('mongodb+srv://mallamuruvenkat:9JN1MpSRawB3a4Jx@speakersfrontendwebpage.rujszx1.mongodb.net/storytelling_platform')
+// Safer way to connect using .env
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 

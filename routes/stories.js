@@ -724,7 +724,7 @@ const xss = require('xss'); // Only using xss, not xss-clean
 const striptags = require('striptags');
 const fs = require('fs');
 const path = require('path');
-const Story = require('../models/Story');
+const Story = require('../models/story');
 const mongoose = require('mongoose');
 
 // ✅ Multer setup for image uploads

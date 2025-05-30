@@ -6,15 +6,10 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect('mongodb+srv://mallamuruvenkat:9JN1MpSRawB3a4Jx@speakersfrontendwebpage.rujszx1.mongodb.net/storytelling_platform', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-}).then(() => {
-  console.log('✅ MongoDB Connected');
-}).catch(err => {
-  console.error('❌ MongoDB connection error:', err);
-});
+// Connect to MongoDB (updated for Mongoose 6+)
+mongoose.connect('mongodb+srv://mallamuruvenkat:dgsdffd4wB3a4Jx@speakersfrontendwebpage.rujszx1.mongodb.net/storytelling_platform')
+  .then(() => console.log('✅ MongoDB Connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Middleware
 app.use(express.json());
@@ -28,6 +23,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/cssStyles', express.static(path.join(__dirname, 'cssStyles')));
+
+// Root route (for Render deployment success message)
+app.get('/', (req, res) => {
+  res.send('✅ Backend API is running!');
+});
 
 // ---------- API Routes (read-only APIs) ----------
 // Import routes

@@ -24,9 +24,13 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use('/cssStyles', express.static(path.join(__dirname, 'cssStyles')));
 
-// Root route (for Render deployment success message)
+// Root route (for Render deployment success message) for Testing purpose
+// app.get('/', (req, res) => {
+//   res.send('✅ Backend API is running!');
+// });
+// ✅ Page Routes
 app.get('/', (req, res) => {
-  res.send('✅ Backend API is running!');
+  res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
 // ---------- API Routes (read-only APIs) ----------

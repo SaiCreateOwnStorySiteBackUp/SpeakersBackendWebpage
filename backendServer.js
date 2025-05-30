@@ -7,7 +7,7 @@ const cors = require('cors');
 app.use(cors());
 
 // Connect to MongoDB (updated for Mongoose 6+)
-mongoose.connect('mongodb+srv://mallamuruvenkat:dgsdffd4wB3a4Jx@speakersfrontendwebpage.rujszx1.mongodb.net/storytelling_platform')
+mongoose.connect('mongodb+srv://mallamuruvenkat:9JN1MpSRawB3a4Jx@speakersfrontendwebpage.rujszx1.mongodb.net/storytelling_platform')
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 

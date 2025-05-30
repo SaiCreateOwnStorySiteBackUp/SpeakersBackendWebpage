@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .login-box {
+      width: 300px;
+      padding: 20px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .link-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .link-row a {
+      font-size: 12px;
+      text-decoration: none;
+      color: #0077cc;
+    }
+
+    .link-row a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="email" id="email" name="email" placeholder="Email" required />
+      <input type="password" id="password" name="password" placeholder="Password" required />
+      <button type="submit">Login</button>
+      <div class="link-row">
+        <a href="updatePassword.html">Update Password</a>
+        <a href="forgotPassword.html">Forgot Password?</a>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem("email", data.email);
+          localStorage.setItem("role", data.role);
+
+          alert("Login successful!");
+          const role = (data.role || "").trim().toLowerCase();
+          if (role === "admin") {
+            window.location.href = "admin/adminDashboardUi.html";
+          } else if (role === "speaker") {
+            window.location.href = "speakersHome.html";
+          } else {
+            alert("Unknown role. Please contact administrator.");
+          }
+        } else {
+          alert("Login failed: " + data.error);
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        alert("Server error, please try again.");
+      }
+    });
+  </script>
+</body>
+</html>

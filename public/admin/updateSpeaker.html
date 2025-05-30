@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Update Speaker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 1rem;
+    }
+
+    .back-btn {
+      display: block;
+      margin-left: auto;
+      margin-bottom: 1rem;
+      padding: 0.5rem 1rem;
+      background-color: #34495e;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s ease; /* Smooth transition */
+    }
+
+    .back-btn:hover {
+      background-color: #2c3e50; /* Darker color on hover */
+    }
+
+
+
+    .search-bar {
+      max-width: 400px;
+      margin: 1rem auto;
+      display: flex;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .speaker-card {
+      background-color: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      position: relative;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .speaker-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .speaker-card h3 {
+      margin: 0 0 0.5rem;
+      color: #2c3e50;
+    }
+
+    .speaker-details {
+      color: #555;
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .edit-icon {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      font-size: 1.2rem;
+      color: #007BFF;
+      cursor: pointer;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .pagination button {
+      padding: 0.5rem 1rem;
+      margin: 0 0.25rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+
+    .pagination button.disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .pagination button.active {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <button class="back-btn" onclick="goBack()">←Dashboard</button>
+  <h2>All Speakers</h2>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search by name or email..." oninput="filterAndRender()" />
+  </div>
+
+  <div id="speakerContainer" class="grid-container"></div>
+  <div class="pagination" id="paginationControls"></div>
+
+  <script>
+  let allSpeakers = [];
+  let filteredSpeakers = [];
+  const perPage = 6;
+  let currentPage = 1;
+  const legacyCutoff = new Date('2025-05-24T14:37:08.000Z');
+
+  async function fetchSpeakers() {
+    const res = await fetch('/admin/all-speakers');
+    allSpeakers = await res.json();
+    filteredSpeakers = allSpeakers;
+    renderSpeakers();
+  }
+
+  function filterAndRender() {
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    filteredSpeakers = allSpeakers.filter(s =>
+      (s.name || '').toLowerCase().includes(query) ||
+      (s.email || '').toLowerCase().includes(query)
+    );
+    currentPage = 1;
+    renderSpeakers();
+  }
+
+  function renderSpeakers() {
+    const container = document.getElementById('speakerContainer');
+    container.innerHTML = '';
+
+    const start = (currentPage - 1) * perPage;
+    const end = start + perPage;
+    const pageSpeakers = filteredSpeakers.slice(start, end);
+
+    pageSpeakers.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'speaker-card';
+      div.innerHTML = `
+        <span class="edit-icon" onclick='editSpeaker(${JSON.stringify(s)})'>✏️</span>
+        <h3>${s.name || 'Unnamed'}</h3>
+        <div class="speaker-details">
+          <strong>Email:</strong> ${s.email || 'N/A'}<br>
+          <strong>Country:</strong> ${s.country || 'N/A'}<br>
+          <strong>Mobile:</strong> ${s.mobile || 'N/A'}<br>
+          <strong>Gender:</strong> ${s.gender || 'N/A'}<br>
+          <strong>Role:</strong> ${s.role || 'N/A'}
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    renderPagination();
+  }
+
+  function renderPagination() {
+    const totalPages = Math.ceil(filteredSpeakers.length / perPage);
+    const pagination = document.getElementById('paginationControls');
+    pagination.innerHTML = '';
+
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = i;
+      btn.className = i === currentPage ? 'active' : '';
+      btn.onclick = () => {
+        currentPage = i;
+        renderSpeakers();
+      };
+      pagination.appendChild(btn);
+    }
+  }
+
+  function editSpeaker(speaker) {
+  const requiredFields = ['name', 'email', 'country', 'mobile', 'gender', 'role'];
+  const missingFields = requiredFields.filter(f => !speaker[f]);
+
+  // Use createdAt if available, else fall back to _id timestamp
+  let createdAtDate = null;
+
+  if (speaker.createdAt) {
+    const parsed = new Date(speaker.createdAt);
+    if (!isNaN(parsed)) createdAtDate = parsed;
+  } else if (speaker._id && typeof speaker._id === 'string' && speaker._id.length === 24) {
+    const timestampHex = speaker._id.substring(0, 8);
+    const timestamp = parseInt(timestampHex, 16);
+    createdAtDate = new Date(timestamp * 1000);
+  }
+
+  const legacyCutoff = new Date('2025-05-24T14:37:08.000Z');
+  const isLegacy = createdAtDate && createdAtDate < legacyCutoff;
+
+  if (missingFields.length > 0 && !isLegacy) {
+    alert(`Missing required fields: ${missingFields.join(', ')}`);
+    return;
+  }
+
+  if (isLegacy) {
+    speaker.name = speaker.name || 'Unnamed';
+    speaker.email = speaker.email || 'unknown@example.com';
+    speaker.country = speaker.country || 'Unknown';
+    speaker.mobile = speaker.mobile || '9999999999';
+    speaker.gender = speaker.gender || 'other';
+    speaker.role = speaker.role || 'speaker';
+  }
+
+  localStorage.setItem('editSpeaker', JSON.stringify(speaker));
+  window.location.href = '/admin/edit-speaker-form.html';
+}
+
+
+
+  function goBack() {
+    window.location.href = 'adminDashboardUi.html';
+  }
+
+  fetchSpeakers();
+</script>
+
+</body>
+</html>

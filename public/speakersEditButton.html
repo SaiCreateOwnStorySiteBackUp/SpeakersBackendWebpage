@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Stories - Speaker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #222;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 20px;
+    }
+
+    .header-bar h1 {
+      margin: 0;
+    }
+
+    .logout-btn {
+      background-color: crimson;
+      border: none;
+      padding: 8px 16px;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: darkred;
+    }
+
+    #storyList {
+      margin: 20px;
+    }
+
+    .story-section {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 25px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 15px;
+      background: #f9f9f9;
+    }
+
+    .story-section img {
+      width: 120px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-right: 20px;
+    }
+
+    .story-content {
+      flex: 1;
+    }
+
+    .story-content h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .story-content p {
+      margin-top: 6px;
+      font-size: 15px;
+    }
+
+    .story-actions {
+      margin-top: 10px;
+    }
+
+    .story-actions button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      margin-right: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .story-actions button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <h1 id="pageTitle">Edit Stories</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+
+  <div id="storyList"></div>
+
+  <script>
+    const storyListDiv = document.getElementById("storyList");
+    const loggedInEmail = localStorage.getItem("email");
+    const pageTitle = document.getElementById("pageTitle");
+
+    if (!loggedInEmail) {
+      alert("You are not logged in.");
+      window.location.href = "login.html";
+    } else {
+      // Fetch speaker name
+      fetch(`/users/email/${encodeURIComponent(loggedInEmail)}`)
+        .then(res => {
+          if (!res.ok) throw new Error('User not found');
+          return res.json();
+        })
+        .then(data => {
+          const speakerName = data?.user?.name?.trim() || "Speaker";
+          pageTitle.textContent = `Edit Stories - ${speakerName}`;
+          document.title = `Edit Stories - ${speakerName}`;
+        })
+        .catch(error => {
+          console.error("Error fetching speaker name:", error);
+          pageTitle.textContent = "Edit Stories - Speaker";
+          document.title = "Edit Stories - Speaker";
+        });
+
+      // Fetch speaker's stories
+      fetch(`/api/stories?email=${encodeURIComponent(loggedInEmail)}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Error fetching stories');
+          return res.json();
+        })
+        .then(stories => {
+          if (!stories.length) {
+            storyListDiv.innerHTML = "<p>No stories found for you.</p>";
+            return;
+          }
+
+          stories.forEach(story => {
+            const storyDiv = document.createElement("div");
+            storyDiv.className = "story-section";
+
+            storyDiv.innerHTML = `
+              <img src="${story.imageUrl || '/public/images/default.jpg'}" alt="Story Image"
+                onerror="this.onerror=null;this.src='/public/images/default.jpg';" />
+              <div class="story-content">
+                <h3>${story.title}</h3>
+                <p>${story.intro || "No introduction provided."}</p>
+                <div class="story-actions">
+                  <button onclick="editStory('${story._id}')">✏️ Edit</button>
+                  <button onclick="confirmDelete('${story._id}')">🗑️ Delete</button>
+                </div>
+              </div>
+            `;
+
+            storyListDiv.appendChild(storyDiv);
+          });
+        })
+        .catch(error => {
+          console.error("Error fetching stories:", error);
+          storyListDiv.innerHTML = "<p>Error loading stories. Please try again.</p>";
+        });
+    }
+
+    function editStory(storyId) {
+      window.location.href = `speakersDashboardUpdateStory.html?edit=${storyId}`;
+    }
+
+    function confirmDelete(storyId) {
+      if (confirm("Are you sure you want to delete this story?")) {
+        fetch(`/api/stories/${storyId}`, {
+          method: "DELETE"
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to delete story');
+          alert("Story deleted successfully!");
+          location.reload();
+        })
+        .catch(err => {
+          alert("Error deleting story.");
+          console.error(err);
+        });
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem("email");
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Story</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+  <link rel="stylesheet" href="../../cssStyles/adminDashboard.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      box-sizing: border-box;
+    }
+    #editorIntro, #editorDesc {
+      height: 150px;
+      background: white;
+      margin-top: 0.5rem;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h2>Edit Story</h2>
+  <div class="form-group">
+    <label for="title">Title</label>
+    <input id="title" type="text" />
+  </div>
+
+  <div class="form-group">
+    <label for="imageUrl">Image URL</label>
+    <input id="imageUrl" type="text" />
+  </div>
+
+  <div class="form-group">
+    <label for="editorIntro">Intro</label>
+    <div id="editorIntro"></div>
+  </div>
+
+  <div class="form-group">
+    <label for="editorDesc">Description</label>
+    <div id="editorDesc"></div>
+  </div>
+
+  <div class="form-group">
+    <label for="youtubeLink">YouTube Link (optional)</label>
+    <input id="youtubeLink" type="text" />
+  </div>
+
+  <button onclick="updateStory()">Update Story</button>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script>
+    const quillIntro = new Quill('#editorIntro', { theme: 'snow' });
+    const quillDesc = new Quill('#editorDesc', { theme: 'snow' });
+
+    const storyData = JSON.parse(localStorage.getItem('editStory'));
+    if (!storyData) {
+      alert('No story data found.');
+      window.location.href = '/views/admin/listStories.html';
+    }
+
+    // Prefill form fields
+    document.getElementById('title').value = storyData.title || '';
+    document.getElementById('imageUrl').value = storyData.imageUrl || '';
+    document.getElementById('youtubeLink').value = storyData.youtubeLink || '';
+    quillIntro.root.innerHTML = storyData.intro || '';
+    quillDesc.root.innerHTML = storyData.description || '';
+
+    async function updateStory() {
+      const updatedStory = {
+        title: document.getElementById('title').value.trim(),
+        imageUrl: document.getElementById('imageUrl').value.trim(),
+        youtubeLink: document.getElementById('youtubeLink').value.trim(),
+        intro: quillIntro.root.innerHTML.trim(),
+        description: quillDesc.root.innerHTML.trim()
+      };
+
+      try {
+        const response = await fetch(`/admin/stories/${storyData._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(updatedStory)
+        });
+
+        if (response.ok) {
+          alert('Story updated successfully!');
+          localStorage.removeItem('editStory');
+          window.location.href = '/views/admin/listStories.html';
+        } else {
+          const err = await response.json();
+          alert('Failed to update: ' + err.message);
+        }
+      } catch (err) {
+        console.error('Error updating story:', err);
+        alert('Something went wrong while updating the story.');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Story</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+  <style>
+    body {
+      background: #fff;
+      color: #000;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #333;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+    }
+    .container {
+      padding: 30px 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .form-group {
+      margin-bottom: 25px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 8px;
+    }
+    input[type="text"],
+    input[type="file"],
+    #imageUrlInput {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .editor {
+      height: 160px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .post-btn {
+      background: #28a745;
+      color: white;
+      padding: 12px 25px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .post-btn:hover {
+      background: #218838;
+    }
+    .current-image {
+      margin-top: 10px;
+    }
+    .current-image img {
+      width: 100%;
+      max-width: 300px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      display: block;
+    }
+    .no-image-text {
+      color: #666;
+      font-style: italic;
+      margin-top: 10px;
+    }
+    /* Toggle buttons styling */
+    #uploadImageBtn, #insertUrlBtn {
+      cursor: pointer;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-right: 6px;
+    }
+    #uploadImageBtn.active, #insertUrlBtn.active {
+      background-color: #0056b3;
+    }
+    #imageInputSections > div {
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header><h1>Edit Story</h1></header>
+
+<main class="container">
+  <form id="editForm" enctype="multipart/form-data">
+    <input type="hidden" id="storyId" />
+
+    <div class="form-group">
+      <label>Update Story Image</label>
+      <div id="imageInputButtons" style="margin-bottom:8px;">
+        <button type="button" id="uploadImageBtn" class="active" aria-pressed="true">Upload Image File</button>
+        <button type="button" id="insertUrlBtn" aria-pressed="false">Insert Image URL</button>
+      </div>
+      <div id="imageInputSections">
+        <div id="uploadImageSection">
+          <input type="file" id="image" name="image" accept="image/*" aria-label="Story image upload" />
+        </div>
+        <div id="insertUrlSection" style="display:none;">
+          <input type="text" id="imageUrlInput" placeholder="Paste image URL here" aria-label="Image URL input" />
+        </div>
+      </div>
+      <div class="current-image">
+        <img id="existingImage" src="" alt="Current Story Image" style="display:none;" />
+        <p id="noImageText" class="no-image-text" style="display:none;">No image available</p>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="titleEditor">Story Title</label>
+      <div id="titleEditor" class="editor" aria-label="Story title editor"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="introEditor">Intro</label>
+      <div id="introEditor" class="editor" aria-label="Intro editor"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="descriptionEditor">Description</label>
+      <div id="descriptionEditor" class="editor" aria-label="Description editor"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="youtubeBox">YouTube Link (optional)</label>
+      <input type="text" id="youtubeBox" placeholder="https://www.youtube.com/watch?v=..." aria-label="YouTube video link" />
+    </div>
+
+    <button type="submit" class="post-btn" id="updateBtn">Update Story</button>
+  </form>
+</main>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+  let titleEditor, introEditor, descriptionEditor, originalStory;
+
+  // Custom Image Handler for Description Editor (like create page)
+  function imageHandler() {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (file) {
+        const range = descriptionEditor.getSelection(true);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64 = e.target.result;
+          descriptionEditor.insertEmbed(range.index, 'image', base64);
+          descriptionEditor.setSelection(range.index + 1);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  window.onload = async () => {
+    const storyId = getQueryParam('edit');
+    if (!storyId) {
+      alert("No story ID provided in URL");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/stories/${storyId}`);
+      const storyData = await res.json();
+
+      if (!storyData || !storyData._id) {
+        alert("Failed to load story data.");
+        return;
+      }
+
+      originalStory = storyData;
+      document.getElementById('storyId').value = storyData._id;
+      document.getElementById('youtubeBox').value = storyData.youtubeLink || '';
+
+      // Handle existing image display
+      updateExistingImage(storyData.imageUrl);
+
+      // Set URL input field with existing image URL for convenience
+      document.getElementById('imageUrlInput').value = storyData.imageUrl || '';
+
+      const toolbarOptions = [
+        [{ 'header': [1, 2, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ 'color': [] }, { 'align': [] }],
+        ['image']
+      ];
+
+      // Initialize Title Editor (simple toolbar, no custom image handler)
+      titleEditor = new Quill('#titleEditor', {
+        theme: 'snow',
+        modules: { toolbar: toolbarOptions }
+      });
+
+      // Initialize Intro Editor (simple toolbar, no custom image handler)
+      introEditor = new Quill('#introEditor', {
+        theme: 'snow',
+        modules: { toolbar: toolbarOptions }
+      });
+
+      // Initialize Description Editor with custom image handler
+      descriptionEditor = new Quill('#descriptionEditor', {
+        theme: 'snow',
+        modules: {
+          toolbar: {
+            container: toolbarOptions,
+            handlers: {
+              'image': imageHandler
+            }
+          }
+        }
+      });
+
+      // Load existing content into editors (use dangerouslyPasteHTML to preserve images)
+      titleEditor.clipboard.dangerouslyPasteHTML(storyData.title || '');
+      introEditor.clipboard.dangerouslyPasteHTML(storyData.intro || '');
+      descriptionEditor.clipboard.dangerouslyPasteHTML(storyData.description || '');
+
+      // Determine which image input to show by default
+      if (storyData.imageUrl && storyData.imageUrl.startsWith('http')) {
+        showImageUrlInput();
+      } else {
+        showImageUploadInput();
+      }
+
+    } catch (err) {
+      console.error("Error fetching story:", err);
+      alert("Failed to fetch story data.");
+    }
+  };
+
+  // Update existing image display or show no-image text
+  function updateExistingImage(imageUrl) {
+    const existingImage = document.getElementById('existingImage');
+    const noImageText = document.getElementById('noImageText');
+
+    if (imageUrl && imageUrl.trim() !== '') {
+      existingImage.src = imageUrl;
+      existingImage.alt = "Current story image";
+      existingImage.style.display = 'block';
+      noImageText.style.display = 'none';
+    } else {
+      existingImage.src = '';
+      existingImage.style.display = 'none';
+      noImageText.style.display = 'block';
+    }
+  }
+
+  // Toggle image input sections and active button styles
+  const uploadImageBtn = document.getElementById('uploadImageBtn');
+  const insertUrlBtn = document.getElementById('insertUrlBtn');
+  const uploadImageSection = document.getElementById('uploadImageSection');
+  const insertUrlSection = document.getElementById('insertUrlSection');
+  const imageFileInput = document.getElementById('image');
+  const imageUrlInput = document.getElementById('imageUrlInput');
+  const existingImage = document.getElementById('existingImage');
+  const noImageText = document.getElementById('noImageText');
+
+  uploadImageBtn.addEventListener('click', () => {
+    showImageUploadInput();
+  });
+
+  insertUrlBtn.addEventListener('click', () => {
+    showImageUrlInput();
+  });
+
+  function showImageUploadInput() {
+    uploadImageSection.style.display = 'block';
+    insertUrlSection.style.display = 'none';
+    uploadImageBtn.classList.add('active');
+    insertUrlBtn.classList.remove('active');
+    uploadImageBtn.setAttribute('aria-pressed', 'true');
+    insertUrlBtn.setAttribute('aria-pressed', 'false');
+  }
+
+  function showImageUrlInput() {
+    uploadImageSection.style.display = 'none';
+    insertUrlSection.style.display = 'block';
+    uploadImageBtn.classList.remove('active');
+    insertUrlBtn.classList.add('active');
+    uploadImageBtn.setAttribute('aria-pressed', 'false');
+    insertUrlBtn.setAttribute('aria-pressed', 'true');
+  }
+
+  // Update preview when file selected
+  imageFileInput.addEventListener('change', () => {
+    if (imageFileInput.files && imageFileInput.files[0]) {
+      imageUrlInput.value = '';  // clear URL input if file chosen
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        existingImage.src = e.target.result;
+        existingImage.style.display = 'block';
+        noImageText.style.display = 'none';
+      };
+      reader.readAsDataURL(imageFileInput.files[0]);
+    } else {
+      // if no file, fallback to URL or original image
+      updateExistingImage(imageUrlInput.value || originalStory.imageUrl || '');
+    }
+  });
+
+  // Update preview when URL input changes
+  imageUrlInput.addEventListener('input', () => {
+    const url = imageUrlInput.value.trim();
+    if (url) {
+      imageFileInput.value = '';  // clear file input if URL entered
+      existingImage.src = url;
+      existingImage.style.display = 'block';
+      noImageText.style.display = 'none';
+    } else {
+      updateExistingImage(originalStory.imageUrl || '');
+    }
+  });
+
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  // Handle form submission (example, you can expand with actual POST logic)
+  document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Gather data from editors and inputs
+    const updatedStory = {
+      id: document.getElementById('storyId').value,
+      title: titleEditor.root.innerHTML,
+      intro: introEditor.root.innerHTML,
+      description: descriptionEditor.root.innerHTML,
+      youtubeLink: document.getElementById('youtubeBox').value.trim(),
+      imageUrl: null,
+      imageFile: null
+    };
+
+    // Determine image source based on active input
+    if (uploadImageSection.style.display === 'block' && imageFileInput.files.length > 0) {
+      updatedStory.imageFile = imageFileInput.files[0];
+    } else if (insertUrlSection.style.display === 'block') {
+      updatedStory.imageUrl = imageUrlInput.value.trim();
+    } else {
+      updatedStory.imageUrl = originalStory.imageUrl || '';
+    }
+
+    // TODO: Send updatedStory data to your server using fetch/POST
+
+    alert('Story update logic to be implemented!');
+  });
+</script>
+
+</body>
+</html>

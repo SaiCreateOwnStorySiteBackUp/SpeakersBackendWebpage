@@ -103,23 +103,32 @@
     const createdAt = new Date(speakerData.createdAt);
     const isLegacy = createdAt < cutoff;
 
-    function autoFillMissingFieldsIfLegacy() {
+    function splitMobileNumber(mobile) {
+      const knownCodes = countries.map(c => c.code);
+      let matchedCode = knownCodes.find(code => mobile.startsWith(code));
+      if (matchedCode) {
+        return {
+          countryCode: matchedCode,
+          number: mobile.slice(matchedCode.length)
+        };
+      }
+      return { countryCode: '', number: mobile };
+    }
+
+    function autoFillForm() {
+      nameInput.value = speakerData.name || '';
+      emailInput.value = speakerData.email || '';
+      roleInput.value = speakerData.role || '';
+
+      const mobileData = speakerData.mobile ? splitMobileNumber(speakerData.mobile) : { countryCode: '', number: '' };
+      countryCodeInput.value = mobileData.countryCode;
+      mobileInput.value = mobileData.number;
+
       if (isLegacy) {
         if (!speakerData.country) {
           countrySelect.classList.add('warning-border');
         } else {
           countrySelect.value = speakerData.country;
-        }
-
-        if (speakerData.mobile) {
-          const knownCodes = countries.map(c => c.code);
-          let matchedCode = knownCodes.find(code => speakerData.mobile.startsWith(code));
-          if (matchedCode) {
-            countryCodeInput.value = matchedCode;
-            mobileInput.value = speakerData.mobile.slice(matchedCode.length);
-          } else {
-            mobileInput.value = speakerData.mobile;
-          }
         }
 
         if (!speakerData.gender) {
@@ -131,23 +140,10 @@
       } else {
         countrySelect.value = speakerData.country || '';
         genderInput.value = (speakerData.gender || '').toLowerCase();
-        if (speakerData.mobile) {
-          const match = speakerData.mobile.match(/^(\+\d{1,4})(\d{6,})$/);
-          if (match) {
-            countryCodeInput.value = match[1];
-            mobileInput.value = match[2];
-          } else {
-            mobileInput.value = speakerData.mobile;
-          }
-        }
       }
     }
 
-    nameInput.value = speakerData.name || '';
-    emailInput.value = speakerData.email || '';
-    roleInput.value = speakerData.role || '';
-
-    autoFillMissingFieldsIfLegacy();
+    autoFillForm();
 
     document.getElementById('editForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -158,9 +154,8 @@
       }
 
       const selectedCountry = countrySelect.value;
-      const rawMobile = mobileInput.value.trim().replace(/\D/g, ''); // numbers only
+      const rawMobile = mobileInput.value.trim().replace(/\D/g, '');
 
-      // India-specific validation
       if (selectedCountry === "India") {
         const indiaRegex = /^[6-9]\d{9}$/;
         if (!indiaRegex.test(rawMobile)) {
@@ -194,16 +189,16 @@
         const result = await response.json();
 
         if (response.ok) {
-            alert('Speaker updated successfully' + (result.emailChanged ? ' and new password was sent due to email change.' : '.'));
-            localStorage.removeItem('editSpeaker');
-            window.location.href = '/admin/updateSpeaker.html';
-          } else {
-            alert('Failed to update speaker: ' + (result.message || 'Unknown error.'));
-          }
-        } catch (err) {
-          console.error('Error while updating speaker:', err);
-          alert('An error occurred while updating the speaker.');
+          alert('Speaker updated successfully' + (result.emailChanged ? ' and new password was sent due to email change.' : '.'));
+          localStorage.removeItem('editSpeaker');
+          window.location.href = '/admin/updateSpeaker.html';
+        } else {
+          alert('Failed to update speaker: ' + (result.message || 'Unknown error.'));
         }
+      } catch (err) {
+        console.error('Error while updating speaker:', err);
+        alert('An error occurred while updating the speaker.');
+      }
     });
 
     function cancelEdit() {

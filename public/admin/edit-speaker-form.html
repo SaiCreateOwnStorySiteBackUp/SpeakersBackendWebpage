@@ -4,133 +4,7 @@
   <meta charset="UTF-8" />
   <title>Edit Speaker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2rem;
-      padding: 0;
-      background-color: #f9f9f9;
-    }
-
-    .form-container {
-      max-width: 40em;
-      margin: auto;
-      border: 1px solid #ccc;
-      padding: 1rem;
-      border-radius: 10px;
-      background-color: #fff;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    }
-
-    h2 {
-      text-align: center;
-      font-size: 1.8em;
-      margin-bottom: 1rem;
-    }
-
-    label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: bold;
-    }
-
-    input, select {
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.3rem;
-      font-size: 1em;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    .phone-group {
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .phone-group input {
-      flex: 1;
-    }
-
-    .country-code {
-      max-width: 6em;
-      text-align: center;
-    }
-
-    .btn-group {
-      margin-top: 1.5rem;
-      display: flex;
-      gap: 1rem;
-      justify-content: space-between;
-    }
-
-    button {
-      flex: 1;
-      padding: 0.6rem 1rem;
-      font-size: 1rem;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .update-btn {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-    }
-
-    .cancel-btn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-    }
-
-    .warning-border {
-      border: 2px solid red !important;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        margin: 1rem;
-      }
-
-      .form-container {
-        padding: 1rem;
-        border: none;
-        box-shadow: none;
-      }
-
-      h2 {
-        font-size: 1.5em;
-      }
-
-      button {
-        font-size: 0.9em;
-        padding: 0.5rem;
-      }
-    }
-
-    @media (min-width: 601px) and (max-width: 1024px) {
-      .form-container {
-        max-width: 90%;
-        padding: 1.5rem;
-      }
-    }
-
-    @media (min-width: 1440px) {
-      .form-container {
-        max-width: 50em;
-        font-size: 1.2em;
-      }
-
-      input, select {
-        font-size: 1.1em;
-      }
-
-      button {
-        font-size: 1.1em;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/cssStyles/edit-speaker-form.css">
 </head>
 <body>
 
@@ -238,19 +112,18 @@
           countrySelect.value = speakerData.country;
         }
 
-        if (!speakerData.mobile) {
-          mobileInput.value = '9999999999';
-          mobileInput.classList.add('warning-border');
+        if (speakerData.mobile) {
+        const knownCodes = countries.map(c => c.code);
+        let matchedCode = knownCodes.find(code => speakerData.mobile.startsWith(code));
+        if (matchedCode) {
+          countryCodeInput.value = matchedCode;
+          mobileInput.value = speakerData.mobile.slice(matchedCode.length);
         } else {
-          // Attempt to split mobile into code + number
-          const match = speakerData.mobile.match(/^(\+\d{1,4})(\d{6,})$/);
-          if (match) {
-            countryCodeInput.value = match[1];
-            mobileInput.value = match[2];
-          } else {
-            mobileInput.value = speakerData.mobile;
-          }
+          // fallback if no known code matched
+          mobileInput.value = speakerData.mobile;
         }
+      }
+
 
         if (!speakerData.gender) {
           genderInput.value = 'other';
@@ -291,14 +164,16 @@
       const originalEmail = speakerData.email.trim();
       const emailChanged = updatedEmail.toLowerCase() !== originalEmail.toLowerCase();
 
-      const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim()}`;
+      // const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim()}`;
+      const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim().replace(/^0+/, '')}`;
+
 
       const updatedSpeaker = {
         name: nameInput.value.trim(),
         email: updatedEmail,
         country: countrySelect.value,
         mobile: fullMobile,
-        gender: genderInput.value,
+        gender: genderInput.value.toLowerCase(),
         role: roleInput.value,
         emailChanged: emailChanged
       };

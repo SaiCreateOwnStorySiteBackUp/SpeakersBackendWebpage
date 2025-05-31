@@ -1,0 +1,125 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 2rem;
+  padding: 0;
+  background-color: #f9f9f9;
+}
+
+.form-container {
+  max-width: 40em;
+  margin: auto;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 10px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+h2 {
+  text-align: center;
+  font-size: 1.8em;
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.3rem;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.phone-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.phone-group input {
+  flex: 1;
+}
+
+.country-code {
+  max-width: 6em;
+  text-align: center;
+}
+
+.btn-group {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+button {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.update-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+}
+
+.cancel-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+}
+
+.warning-border {
+  border: 2px solid red !important;
+}
+
+@media (max-width: 600px) {
+  body {
+    margin: 1rem;
+  }
+
+  .form-container {
+    padding: 1rem;
+    border: none;
+    box-shadow: none;
+  }
+
+  h2 {
+    font-size: 1.5em;
+  }
+
+  button {
+    font-size: 0.9em;
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 1024px) {
+  .form-container {
+    max-width: 90%;
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .form-container {
+    max-width: 50em;
+    font-size: 1.2em;
+  }
+
+  input, select {
+    font-size: 1.1em;
+  }
+
+  button {
+    font-size: 1.1em;
+  }
+}

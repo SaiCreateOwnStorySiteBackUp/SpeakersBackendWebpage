@@ -43,6 +43,20 @@
       border-radius: 5px;
     }
 
+    .phone-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .phone-group input {
+      flex: 1;
+    }
+
+    .country-code {
+      max-width: 6em;
+      text-align: center;
+    }
+
     .btn-group {
       margin-top: 1.5rem;
       display: flex;
@@ -135,7 +149,10 @@
       </select>
 
       <label for="mobile">Mobile</label>
-      <input type="text" id="mobile" required>
+      <div class="phone-group">
+        <input type="text" id="countryCode" class="country-code" placeholder="+91" required readonly>
+        <input type="text" id="mobile" placeholder="Enter mobile number" required>
+      </div>
 
       <label for="gender">Gender</label>
       <select id="gender" required>
@@ -193,15 +210,20 @@
     const emailInput = document.getElementById('email');
     const countrySelect = document.getElementById('country');
     const mobileInput = document.getElementById('mobile');
+    const countryCodeInput = document.getElementById('countryCode');
     const genderInput = document.getElementById('gender');
     const roleInput = document.getElementById('role');
 
-    // Populate country select dropdown
     countries.forEach(country => {
       const option = document.createElement('option');
       option.value = country.name;
       option.textContent = country.name;
       countrySelect.appendChild(option);
+    });
+
+    countrySelect.addEventListener('change', () => {
+      const selected = countries.find(c => c.name === countrySelect.value);
+      countryCodeInput.value = selected ? selected.code : '';
     });
 
     const cutoff = new Date('2025-05-24T14:37:08.000Z');
@@ -211,7 +233,6 @@
     function autoFillMissingFieldsIfLegacy() {
       if (isLegacy) {
         if (!speakerData.country) {
-          countrySelect.value = 'Unknown';
           countrySelect.classList.add('warning-border');
         } else {
           countrySelect.value = speakerData.country;
@@ -221,7 +242,14 @@
           mobileInput.value = '9999999999';
           mobileInput.classList.add('warning-border');
         } else {
-          mobileInput.value = speakerData.mobile;
+          // Attempt to split mobile into code + number
+          const match = speakerData.mobile.match(/^(\+\d{1,4})(\d{6,})$/);
+          if (match) {
+            countryCodeInput.value = match[1];
+            mobileInput.value = match[2];
+          } else {
+            mobileInput.value = speakerData.mobile;
+          }
         }
 
         if (!speakerData.gender) {
@@ -232,12 +260,19 @@
         }
       } else {
         countrySelect.value = speakerData.country || '';
-        mobileInput.value = speakerData.mobile || '';
         genderInput.value = speakerData.gender || '';
+        if (speakerData.mobile) {
+          const match = speakerData.mobile.match(/^(\+\d{1,4})(\d{6,})$/);
+          if (match) {
+            countryCodeInput.value = match[1];
+            mobileInput.value = match[2];
+          } else {
+            mobileInput.value = speakerData.mobile;
+          }
+        }
       }
     }
 
-    // Pre-fill form
     nameInput.value = speakerData.name || '';
     emailInput.value = speakerData.email || '';
     roleInput.value = speakerData.role || '';
@@ -247,15 +282,22 @@
     document.getElementById('editForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      if (!countryCodeInput.value) {
+        alert("Please select a country to get the country code.");
+        return;
+      }
+
       const updatedEmail = emailInput.value.trim();
       const originalEmail = speakerData.email.trim();
       const emailChanged = updatedEmail.toLowerCase() !== originalEmail.toLowerCase();
+
+      const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim()}`;
 
       const updatedSpeaker = {
         name: nameInput.value.trim(),
         email: updatedEmail,
         country: countrySelect.value,
-        mobile: mobileInput.value.trim(),
+        mobile: fullMobile,
         gender: genderInput.value,
         role: roleInput.value,
         emailChanged: emailChanged

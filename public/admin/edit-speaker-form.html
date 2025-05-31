@@ -3,49 +3,121 @@
 <head>
   <meta charset="UTF-8" />
   <title>Edit Speaker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 2rem;
+      padding: 0;
+      background-color: #f9f9f9;
     }
+
     .form-container {
-      max-width: 500px;
+      max-width: 40em;
       margin: auto;
       border: 1px solid #ccc;
       padding: 1rem;
       border-radius: 10px;
+      background-color: #fff;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
+
+    h2 {
+      text-align: center;
+      font-size: 1.8em;
+      margin-bottom: 1rem;
+    }
+
     label {
       display: block;
       margin-top: 1rem;
+      font-weight: bold;
     }
+
     input, select {
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.3rem;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
     }
+
     .btn-group {
       margin-top: 1.5rem;
       display: flex;
+      gap: 1rem;
       justify-content: space-between;
     }
+
     button {
-      padding: 0.5rem 1rem;
+      flex: 1;
+      padding: 0.6rem 1rem;
       font-size: 1rem;
       cursor: pointer;
+      border-radius: 5px;
     }
+
     .update-btn {
       background-color: #4CAF50;
       color: white;
       border: none;
     }
+
     .cancel-btn {
       background-color: #f44336;
       color: white;
       border: none;
     }
+
     .warning-border {
-      border: 2px solid red;
+      border: 2px solid red !important;
+    }
+
+    /* Mobile (≤600px) */
+    @media (max-width: 600px) {
+      body {
+        margin: 1rem;
+      }
+
+      .form-container {
+        padding: 1rem;
+        border: none;
+        box-shadow: none;
+      }
+
+      h2 {
+        font-size: 1.5em;
+      }
+
+      button {
+        font-size: 0.9em;
+        padding: 0.5rem;
+      }
+    }
+
+    /* Tablets (601px–1024px) */
+    @media (min-width: 601px) and (max-width: 1024px) {
+      .form-container {
+        max-width: 90%;
+        padding: 1.5rem;
+      }
+    }
+
+    /* Large screens / TV (≥1440px) */
+    @media (min-width: 1440px) {
+      .form-container {
+        max-width: 50em;
+        font-size: 1.2em;
+      }
+
+      input, select {
+        font-size: 1.1em;
+      }
+
+      button {
+        font-size: 1.1em;
+      }
     }
   </style>
 </head>
@@ -58,7 +130,7 @@
       <input type="text" id="name" required>
 
       <label for="email">Email</label>
-      <input type="email" id="email" required disabled>
+      <input type="email" id="email" required>
 
       <label for="country">Country</label>
       <input type="text" id="country" required>
@@ -145,12 +217,18 @@
     document.getElementById('editForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const updatedEmail = emailInput.value.trim();
+      const originalEmail = speakerData.email.trim();
+      const emailChanged = updatedEmail.toLowerCase() !== originalEmail.toLowerCase();
+
       const updatedSpeaker = {
-        name: nameInput.value,
-        country: countryInput.value,
-        mobile: mobileInput.value,
+        name: nameInput.value.trim(),
+        email: updatedEmail,
+        country: countryInput.value.trim(),
+        mobile: mobileInput.value.trim(),
         gender: genderInput.value,
-        role: roleInput.value
+        role: roleInput.value,
+        emailChanged: emailChanged
       };
 
       try {
@@ -161,7 +239,8 @@
         });
 
         if (response.ok) {
-          alert('Speaker updated successfully');
+          const result = await response.json();
+          alert(result.message || 'Speaker updated successfully');
           localStorage.removeItem('editSpeaker');
           window.location.href = '/admin/updateSpeaker.html';
         } else {

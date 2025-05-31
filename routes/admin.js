@@ -113,24 +113,69 @@ router.get("/get-speaker/:id", async (req, res) => {
 });
 
 // ✅ Update speaker info
+// router.put("/update-speaker/:id", async (req, res) => {
+//   try {
+//     const { name, country, mobile } = req.body;
+//
+//     const updated = await User.findByIdAndUpdate(
+//       req.params.id,
+//       { name, country, mobile },
+//       { new: true }
+//     );
+//
+//     if (!updated) return res.status(404).json({ message: "Speaker not found" });
+//
+//     res.json({ message: "Speaker updated successfully" });
+//   } catch (error) {
+//     console.error("Error updating speaker:", error);
+//     res.status(500).json({ message: "Failed to update speaker" });
+//   }
+// });
+ // ✅ Update speaker info and detect email change 
 router.put("/update-speaker/:id", async (req, res) => {
   try {
-    const { name, country, mobile } = req.body;
+    const { name, country, mobile, email } = req.body;
 
-    const updated = await User.findByIdAndUpdate(
-      req.params.id,
-      { name, country, mobile },
-      { new: true }
-    );
+    const existingUser = await User.findById(req.params.id);
+    if (!existingUser) return res.status(404).json({ message: "Speaker not found" });
 
-    if (!updated) return res.status(404).json({ message: "Speaker not found" });
+    const emailChanged = email && email !== existingUser.email;
 
-    res.json({ message: "Speaker updated successfully" });
+    const updatePayload = {
+      name: name || existingUser.name,
+      country: country || existingUser.country,
+      mobile: mobile || existingUser.mobile,
+    };
+
+    if (emailChanged) {
+      const newPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      updatePayload.email = email;
+      updatePayload.password = hashedPassword;
+
+      await sendGenericEmail(
+        email,
+        "Email Updated - New Password",
+        `<p>Hello ${name || existingUser.name},</p>
+         <p>Your email has been updated. Here's your new login password:</p>
+         <p><strong>${newPassword}</strong></p>
+         <p>- Admin Team</p>`
+      );
+    }
+
+    await User.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
+
+    res.json({
+      message: "Speaker updated successfully",
+      emailChanged: emailChanged,
+    });
   } catch (error) {
     console.error("Error updating speaker:", error);
     res.status(500).json({ message: "Failed to update speaker" });
   }
 });
+
 
 // ---------- STORY ROUTES ----------
 

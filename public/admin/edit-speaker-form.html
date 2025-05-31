@@ -74,7 +74,6 @@
       border: 2px solid red !important;
     }
 
-    /* Mobile (≤600px) */
     @media (max-width: 600px) {
       body {
         margin: 1rem;
@@ -96,7 +95,6 @@
       }
     }
 
-    /* Tablets (601px–1024px) */
     @media (min-width: 601px) and (max-width: 1024px) {
       .form-container {
         max-width: 90%;
@@ -104,7 +102,6 @@
       }
     }
 
-    /* Large screens / TV (≥1440px) */
     @media (min-width: 1440px) {
       .form-container {
         max-width: 50em;
@@ -133,7 +130,9 @@
       <input type="email" id="email" required>
 
       <label for="country">Country</label>
-      <input type="text" id="country" required>
+      <select id="country" required>
+        <option value="">Select Country</option>
+      </select>
 
       <label for="mobile">Mobile</label>
       <input type="text" id="mobile" required>
@@ -167,12 +166,43 @@
       window.location.href = '/admin/updateSpeaker.html';
     }
 
+    const countries = [
+      { name: "India", code: "+91" },
+      { name: "United States", code: "+1" },
+      { name: "United Kingdom", code: "+44" },
+      { name: "Australia", code: "+61" },
+      { name: "Canada", code: "+1" },
+      { name: "Germany", code: "+49" },
+      { name: "France", code: "+33" },
+      { name: "China", code: "+86" },
+      { name: "Japan", code: "+81" },
+      { name: "Brazil", code: "+55" },
+      { name: "Russia", code: "+7" },
+      { name: "South Africa", code: "+27" },
+      { name: "Indonesia", code: "+62" },
+      { name: "Mexico", code: "+52" },
+      { name: "Italy", code: "+39" },
+      { name: "Spain", code: "+34" },
+      { name: "Netherlands", code: "+31" },
+      { name: "Sweden", code: "+46" },
+      { name: "Singapore", code: "+65" },
+      { name: "New Zealand", code: "+64" }
+    ];
+
     const nameInput = document.getElementById('name');
     const emailInput = document.getElementById('email');
-    const countryInput = document.getElementById('country');
+    const countrySelect = document.getElementById('country');
     const mobileInput = document.getElementById('mobile');
     const genderInput = document.getElementById('gender');
     const roleInput = document.getElementById('role');
+
+    // Populate country select dropdown
+    countries.forEach(country => {
+      const option = document.createElement('option');
+      option.value = country.name;
+      option.textContent = country.name;
+      countrySelect.appendChild(option);
+    });
 
     const cutoff = new Date('2025-05-24T14:37:08.000Z');
     const createdAt = new Date(speakerData.createdAt);
@@ -181,10 +211,10 @@
     function autoFillMissingFieldsIfLegacy() {
       if (isLegacy) {
         if (!speakerData.country) {
-          countryInput.value = 'Unknown';
-          countryInput.classList.add('warning-border');
+          countrySelect.value = 'Unknown';
+          countrySelect.classList.add('warning-border');
         } else {
-          countryInput.value = speakerData.country;
+          countrySelect.value = speakerData.country;
         }
 
         if (!speakerData.mobile) {
@@ -201,7 +231,7 @@
           genderInput.value = speakerData.gender;
         }
       } else {
-        countryInput.value = speakerData.country || '';
+        countrySelect.value = speakerData.country || '';
         mobileInput.value = speakerData.mobile || '';
         genderInput.value = speakerData.gender || '';
       }
@@ -224,7 +254,7 @@
       const updatedSpeaker = {
         name: nameInput.value.trim(),
         email: updatedEmail,
-        country: countryInput.value.trim(),
+        country: countrySelect.value,
         mobile: mobileInput.value.trim(),
         gender: genderInput.value,
         role: roleInput.value,

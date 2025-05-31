@@ -131,50 +131,52 @@ router.get("/get-speaker/:id", async (req, res) => {
 //     res.status(500).json({ message: "Failed to update speaker" });
 //   }
 // });
- // ✅ Update speaker info and detect email change 
-router.put("/update-speaker/:id", async (req, res) => {
-  try {
-    const { name, country, mobile, email } = req.body;
+ // ✅ Update speaker info and detect email change
+ router.put("/update-speaker/:id", async (req, res) => {
+   try {
+     const { name, country, mobile, email, gender, role } = req.body;
 
-    const existingUser = await User.findById(req.params.id);
-    if (!existingUser) return res.status(404).json({ message: "Speaker not found" });
+     const existingUser = await User.findById(req.params.id);
+     if (!existingUser) return res.status(404).json({ message: "Speaker not found" });
 
-    const emailChanged = email && email !== existingUser.email;
+     const emailChanged = email && email !== existingUser.email;
 
-    const updatePayload = {
-      name: name || existingUser.name,
-      country: country || existingUser.country,
-      mobile: mobile || existingUser.mobile,
-    };
+     const updatePayload = {
+       name: name || existingUser.name,
+       country: country || existingUser.country,
+       mobile: mobile || existingUser.mobile,
+       gender: gender || existingUser.gender,
+       role: role || existingUser.role
+     };
 
-    if (emailChanged) {
-      const newPassword = generateRandomPassword();
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+     if (emailChanged) {
+       const newPassword = generateRandomPassword();
+       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      updatePayload.email = email;
-      updatePayload.password = hashedPassword;
+       updatePayload.email = email;
+       updatePayload.password = hashedPassword;
 
-      await sendGenericEmail(
-        email,
-        "Email Updated - New Password",
-        `<p>Hello ${name || existingUser.name},</p>
-         <p>Your email has been updated. Here's your new login password:</p>
-         <p><strong>${newPassword}</strong></p>
-         <p>- Admin Team</p>`
-      );
-    }
+       await sendGenericEmail(
+         email,
+         "Email Updated - New Password",
+         `<p>Hello ${name || existingUser.name},</p>
+          <p>Your email has been updated. Here's your new login password:</p>
+          <p><strong>${newPassword}</strong></p>
+          <p>- Admin Team</p>`
+       );
+     }
 
-    await User.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
+     await User.findByIdAndUpdate(req.params.id, updatePayload, { new: true });
 
-    res.json({
-      message: "Speaker updated successfully",
-      emailChanged: emailChanged,
-    });
-  } catch (error) {
-    console.error("Error updating speaker:", error);
-    res.status(500).json({ message: "Failed to update speaker" });
-  }
-});
+     res.json({
+       message: "Speaker updated successfully",
+       emailChanged: emailChanged,
+     });
+   } catch (error) {
+     console.error("Error updating speaker:", error);
+     res.status(500).json({ message: "Failed to update speaker" });
+   }
+ });
 
 
 // ---------- STORY ROUTES ----------

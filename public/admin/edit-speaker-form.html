@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/cssStyles/edit-speaker-form.css">
 </head>
 <body>
-
   <div class="form-container">
     <h2>Edit Speaker</h2>
     <form id="editForm">
@@ -113,27 +112,25 @@
         }
 
         if (speakerData.mobile) {
-        const knownCodes = countries.map(c => c.code);
-        let matchedCode = knownCodes.find(code => speakerData.mobile.startsWith(code));
-        if (matchedCode) {
-          countryCodeInput.value = matchedCode;
-          mobileInput.value = speakerData.mobile.slice(matchedCode.length);
-        } else {
-          // fallback if no known code matched
-          mobileInput.value = speakerData.mobile;
+          const knownCodes = countries.map(c => c.code);
+          let matchedCode = knownCodes.find(code => speakerData.mobile.startsWith(code));
+          if (matchedCode) {
+            countryCodeInput.value = matchedCode;
+            mobileInput.value = speakerData.mobile.slice(matchedCode.length);
+          } else {
+            mobileInput.value = speakerData.mobile;
+          }
         }
-      }
-
 
         if (!speakerData.gender) {
           genderInput.value = 'other';
           genderInput.classList.add('warning-border');
         } else {
-          genderInput.value = speakerData.gender;
+          genderInput.value = speakerData.gender.toLowerCase();
         }
       } else {
         countrySelect.value = speakerData.country || '';
-        genderInput.value = speakerData.gender || '';
+        genderInput.value = (speakerData.gender || '').toLowerCase();
         if (speakerData.mobile) {
           const match = speakerData.mobile.match(/^(\+\d{1,4})(\d{6,})$/);
           if (match) {
@@ -160,22 +157,31 @@
         return;
       }
 
+      const selectedCountry = countrySelect.value;
+      const rawMobile = mobileInput.value.trim().replace(/\D/g, ''); // numbers only
+
+      // India-specific validation
+      if (selectedCountry === "India") {
+        const indiaRegex = /^[6-9]\d{9}$/;
+        if (!indiaRegex.test(rawMobile)) {
+          alert("For India, mobile number must be 10 digits and start with 6, 7, 8, or 9.");
+          return;
+        }
+      }
+
+      const fullMobile = `${countryCodeInput.value}${rawMobile}`;
       const updatedEmail = emailInput.value.trim();
       const originalEmail = speakerData.email.trim();
       const emailChanged = updatedEmail.toLowerCase() !== originalEmail.toLowerCase();
 
-      // const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim()}`;
-      const fullMobile = `${countryCodeInput.value}${mobileInput.value.trim().replace(/^0+/, '')}`;
-
-
       const updatedSpeaker = {
         name: nameInput.value.trim(),
         email: updatedEmail,
-        country: countrySelect.value,
+        country: selectedCountry,
         mobile: fullMobile,
         gender: genderInput.value.toLowerCase(),
         role: roleInput.value,
-        emailChanged: emailChanged
+        emailChanged
       };
 
       try {
@@ -185,18 +191,19 @@
           body: JSON.stringify(updatedSpeaker)
         });
 
+        const result = await response.json();
+
         if (response.ok) {
-          const result = await response.json();
-          alert(result.message || 'Speaker updated successfully');
-          localStorage.removeItem('editSpeaker');
-          window.location.href = '/admin/updateSpeaker.html';
-        } else {
-          const error = await response.text();
-          alert('Update failed: ' + error);
+            alert('Speaker updated successfully' + (result.emailChanged ? ' and new password was sent due to email change.' : '.'));
+            localStorage.removeItem('editSpeaker');
+            window.location.href = '/admin/updateSpeaker.html';
+          } else {
+            alert('Failed to update speaker: ' + (result.message || 'Unknown error.'));
+          }
+        } catch (err) {
+          console.error('Error while updating speaker:', err);
+          alert('An error occurred while updating the speaker.');
         }
-      } catch (err) {
-        alert('Error updating speaker: ' + err.message);
-      }
     });
 
     function cancelEdit() {

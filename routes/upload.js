@@ -151,66 +151,8 @@ const upload = multer({
 // });
 
 // POST /uploadStory - Upload a story with image
-const heicConvert = require("heic-convert");
-const sharp = require("sharp");
-router.post("/uploadStory", upload.single("image"), async (req, res) => {
-  try {
-    const { email, title, intro, description, youtubeLink, imageUrl: imageUrlFromBody } = req.body;
-
-    if (!email || !title || !description) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
-    }
-
-    let imageUrl = "";
-
-    // Handle uploaded image
-    if (req.file) {
-      const ext = path.extname(req.file.originalname).toLowerCase();
-
-      // Convert HEIC/HEIF to JPEG
-      if (ext === ".heic" || ext === ".heif") {
-        const inputBuffer = fs.readFileSync(req.file.path);
-        const jpegBuffer = await sharp(inputBuffer)
-          .jpeg({ quality: 90 })
-          .toBuffer();
-
-        const newFilename = req.file.filename.replace(/\.(heic|heif)$/i, ".jpg");
-        const newPath = path.join(uploadPath, newFilename);
-
-        fs.writeFileSync(newPath, jpegBuffer);
-        fs.unlinkSync(req.file.path); // Delete original HEIC file
-
-        imageUrl = "/uploads/" + newFilename;
-      } else {
-        imageUrl = "/uploads/" + req.file.filename;
-      }
-    } else if (imageUrlFromBody && imageUrlFromBody.trim() !== "") {
-      imageUrl = imageUrlFromBody.trim();
-    }
-
-    const newStory = new Story({
-      email,
-      title,
-      intro,
-      description,
-      youtubeLink,
-      imageUrl,
-      createdAt: new Date()
-    });
-
-    await newStory.save();
-
-    res.status(201).json({
-      success: true,
-      message: "Story uploaded successfully",
-      story: newStory
-    });
-
-  } catch (error) {
-    console.error("Error uploading story:", error);
-    res.status(500).json({ success: false, message: "Internal Server Error" });
-  }
-});
+// const heicConvert = require("heic-convert");
+// const sharp = require("sharp");
 // router.post("/uploadStory", upload.single("image"), async (req, res) => {
 //   try {
 //     const { email, title, intro, description, youtubeLink, imageUrl: imageUrlFromBody } = req.body;
@@ -219,10 +161,69 @@ router.post("/uploadStory", upload.single("image"), async (req, res) => {
 //       return res.status(400).json({ success: false, message: "Missing required fields" });
 //     }
 //
-//     // ✅ Choose uploaded image if present, else fallback to imageUrl provided in body
 //     let imageUrl = "";
+//
+//     // Handle uploaded image
+//     // if (req.file) {
+//     //   const ext = path.extname(req.file.originalname).toLowerCase();
+//     //
+//     //   // Convert HEIC/HEIF to JPEG
+//     //   if (ext === ".heic" || ext === ".heif") {
+//     //     const inputBuffer = fs.readFileSync(req.file.path);
+//     //     const jpegBuffer = await sharp(inputBuffer)
+//     //       .jpeg({ quality: 90 })
+//     //       .toBuffer();
+//     //
+//     //     const newFilename = req.file.filename.replace(/\.(heic|heif)$/i, ".jpg");
+//     //     const newPath = path.join(uploadPath, newFilename);
+//     //
+//     //     fs.writeFileSync(newPath, jpegBuffer);
+//     //     fs.unlinkSync(req.file.path); // Delete original HEIC file
+//     //
+//     //     imageUrl = "/uploads/" + newFilename;
+//     //   }
+//     // Resize to a smaller version for visualization (e.g., 800px width)
+// const smallFilename = req.file.filename.replace(path.extname(req.file.filename), "_small.jpg");
+// const smallPath = path.join(uploadPath, smallFilename);
+//
+// await sharp(req.file.path)
+//   .resize({ width: 800 }) // Resize width to 800px, height auto-scaled
+//   .jpeg({ quality: 80 })
+//   .toFile(smallPath);
+//
+// // Use small image as final imageUrl (for visualization)
+// imageUrl = "/uploads/" + smallFilename;
+//
+// // Optional: Delete original full-size image to save space
+// fs.unlinkSync(req.file.path);
+//
 //     if (req.file) {
-//       imageUrl = "/uploads/" + req.file.filename;
+//       const ext = path.extname(req.file.originalname).toLowerCase();
+//
+//       let finalBuffer;
+//       if (ext === ".heic" || ext === ".heif") {
+//         const inputBuffer = fs.readFileSync(req.file.path);
+//         finalBuffer = await sharp(inputBuffer).jpeg({ quality: 90 }).toBuffer();
+//         fs.unlinkSync(req.file.path);
+//       } else {
+//         finalBuffer = fs.readFileSync(req.file.path);
+//       }
+//
+//       const baseName = req.file.filename.replace(/\.(heic|heif|jpg|jpeg|png)$/i, "");
+//       const smallFilename = `${baseName}_small.jpg`;
+//       const smallPath = path.join(uploadPath, smallFilename);
+//
+//       await sharp(finalBuffer)
+//         .resize({ width: 800 })
+//         .jpeg({ quality: 80 })
+//         .toFile(smallPath);
+//
+//       imageUrl = "/uploads/" + smallFilename;
+//     }
+//
+//      else {
+//         imageUrl = "/uploads/" + req.file.filename;
+//       }
 //     } else if (imageUrlFromBody && imageUrlFromBody.trim() !== "") {
 //       imageUrl = imageUrlFromBody.trim();
 //     }
@@ -251,8 +252,7 @@ router.post("/uploadStory", upload.single("image"), async (req, res) => {
 //   }
 // });
 
-
-// ✅ PUT /upload/updateStory/:id - Update existing story
+//
 // router.put("/updateStory/:id", upload.single("image"), async (req, res) => {
 //   try {
 //     const storyId = req.params.id;
@@ -265,9 +265,70 @@ router.post("/uploadStory", upload.single("image"), async (req, res) => {
 //       youtubeLink
 //     };
 //
+//     // if (req.file) {
+//     //   const ext = path.extname(req.file.originalname).toLowerCase();
+//     //
+//     //   // If file is HEIC or HEIF, convert to JPEG
+//     //   if (ext === ".heic" || ext === ".heif") {
+//     //     const inputBuffer = fs.readFileSync(req.file.path);
+//     //     const jpegBuffer = await sharp(inputBuffer)
+//     //       .jpeg({ quality: 90 })
+//     //       .toBuffer();
+//     //
+//     //     const newFilename = req.file.filename.replace(/\.(heic|heif)$/i, ".jpg");
+//     //     const newPath = path.join(uploadPath, newFilename);
+//     //
+//     //     fs.writeFileSync(newPath, jpegBuffer);
+//     //     fs.unlinkSync(req.file.path); // Delete original HEIC file
+//     //
+//     //     updateData.imageUrl = "/uploads/" + newFilename;
+//     //   }
+//     // Resize to a smaller version for visualization (e.g., 800px width)
+// const smallFilename = req.file.filename.replace(path.extname(req.file.filename), "_small.jpg");
+// const smallPath = path.join(uploadPath, smallFilename);
+//
+// await sharp(req.file.path)
+//   .resize({ width: 800 }) // Resize width to 800px, height auto-scaled
+//   .jpeg({ quality: 80 })
+//   .toFile(smallPath);
+//
+// // Use small image as final imageUrl (for visualization)
+// imageUrl = "/uploads/" + smallFilename;
+//
+// // Optional: Delete original full-size image to save space
+// fs.unlinkSync(req.file.path);
+//
 //     if (req.file) {
-//       updateData.imageUrl = "/uploads/" + req.file.filename;
+//       const ext = path.extname(req.file.originalname).toLowerCase();
+//
+//       let finalBuffer;
+//       if (ext === ".heic" || ext === ".heif") {
+//         const inputBuffer = fs.readFileSync(req.file.path);
+//         finalBuffer = await sharp(inputBuffer).jpeg({ quality: 90 }).toBuffer();
+//         fs.unlinkSync(req.file.path);
+//       } else {
+//         finalBuffer = fs.readFileSync(req.file.path);
+//       }
+//
+//       const baseName = req.file.filename.replace(/\.(heic|heif|jpg|jpeg|png)$/i, "");
+//       const smallFilename = `${baseName}_small.jpg`;
+//       const smallPath = path.join(uploadPath, smallFilename);
+//
+//       await sharp(finalBuffer)
+//         .resize({ width: 800 })
+//         .jpeg({ quality: 80 })
+//         .toFile(smallPath);
+//
+//       imageUrl = "/uploads/" + smallFilename;
 //     }
+//
+//      else {
+//         updateData.imageUrl = "/uploads/" + req.file.filename;
+//       }
+//     }
+//     else if (req.body.imageUrl && req.body.imageUrl.trim() !== "") {
+//   updateData.imageUrl = req.body.imageUrl.trim();
+// }
 //
 //     const updatedStory = await Story.findByIdAndUpdate(storyId, updateData, { new: true });
 //
@@ -287,10 +348,71 @@ router.post("/uploadStory", upload.single("image"), async (req, res) => {
 //   }
 // });
 
+// POST /uploadStory
+router.post("/uploadStory", upload.single("image"), async (req, res) => {
+  try {
+    const { email, title, intro, description, youtubeLink, imageUrl: imageUrlFromBody } = req.body;
+
+    if (!email || !title || !description) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    let imageUrl = "";
+
+    if (req.file) {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const inputBuffer = fs.readFileSync(req.file.path);
+      let finalBuffer = inputBuffer;
+
+      if (ext === ".heic" || ext === ".heif") {
+        finalBuffer = await sharp(inputBuffer).jpeg({ quality: 90 }).toBuffer();
+        fs.unlinkSync(req.file.path); // Remove original HEIC/HEIF file
+      }
+
+      const baseName = req.file.filename.replace(/\.(heic|heif|jpg|jpeg|png)$/i, "");
+      const smallFilename = `${baseName}_small.jpg`;
+      const smallPath = path.join(uploadPath, smallFilename);
+
+      await sharp(finalBuffer)
+        .resize({ width: 800 })
+        .jpeg({ quality: 80 })
+        .toFile(smallPath);
+
+      imageUrl = "/uploads/" + smallFilename;
+    } else if (imageUrlFromBody && imageUrlFromBody.trim() !== "") {
+      imageUrl = imageUrlFromBody.trim();
+    }
+
+    const newStory = new Story({
+      email,
+      title,
+      intro,
+      description,
+      youtubeLink,
+      imageUrl,
+      createdAt: new Date()
+    });
+
+    await newStory.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Story uploaded successfully",
+      story: newStory
+    });
+
+  } catch (error) {
+    console.error("Error uploading story:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+});
+
+
+// PUT /updateStory/:id
 router.put("/updateStory/:id", upload.single("image"), async (req, res) => {
   try {
     const storyId = req.params.id;
-    const { title, intro, description, youtubeLink } = req.body;
+    const { title, intro, description, youtubeLink, imageUrl: imageUrlFromBody } = req.body;
 
     const updateData = {
       title,
@@ -301,28 +423,27 @@ router.put("/updateStory/:id", upload.single("image"), async (req, res) => {
 
     if (req.file) {
       const ext = path.extname(req.file.originalname).toLowerCase();
+      const inputBuffer = fs.readFileSync(req.file.path);
+      let finalBuffer = inputBuffer;
 
-      // If file is HEIC or HEIF, convert to JPEG
       if (ext === ".heic" || ext === ".heif") {
-        const inputBuffer = fs.readFileSync(req.file.path);
-        const jpegBuffer = await sharp(inputBuffer)
-          .jpeg({ quality: 90 })
-          .toBuffer();
-
-        const newFilename = req.file.filename.replace(/\.(heic|heif)$/i, ".jpg");
-        const newPath = path.join(uploadPath, newFilename);
-
-        fs.writeFileSync(newPath, jpegBuffer);
-        fs.unlinkSync(req.file.path); // Delete original HEIC file
-
-        updateData.imageUrl = "/uploads/" + newFilename;
-      } else {
-        updateData.imageUrl = "/uploads/" + req.file.filename;
+        finalBuffer = await sharp(inputBuffer).jpeg({ quality: 90 }).toBuffer();
+        fs.unlinkSync(req.file.path);
       }
+
+      const baseName = req.file.filename.replace(/\.(heic|heif|jpg|jpeg|png)$/i, "");
+      const smallFilename = `${baseName}_small.jpg`;
+      const smallPath = path.join(uploadPath, smallFilename);
+
+      await sharp(finalBuffer)
+        .resize({ width: 800 })
+        .jpeg({ quality: 80 })
+        .toFile(smallPath);
+
+      updateData.imageUrl = "/uploads/" + smallFilename;
+    } else if (imageUrlFromBody && imageUrlFromBody.trim() !== "") {
+      updateData.imageUrl = imageUrlFromBody.trim();
     }
-    else if (req.body.imageUrl && req.body.imageUrl.trim() !== "") {
-  updateData.imageUrl = req.body.imageUrl.trim();
-}
 
     const updatedStory = await Story.findByIdAndUpdate(storyId, updateData, { new: true });
 

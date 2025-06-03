@@ -209,7 +209,7 @@ document.getElementById("storyForm").addEventListener("submit", async function (
 <!-- No changes in <head> or styling, skipping ahead to script -->
 
 <!-- <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script> -->
-<script>
+<!-- <script>
 const email = localStorage.getItem("email");
 if (!email) {
   alert("Please log in first.");
@@ -398,6 +398,188 @@ if (result.success) {
     document.getElementById("imageFile").value = "";
     document.getElementById("imageUrl").value = "";
   }
+</script> -->
+<script>
+const email = localStorage.getItem("email");
+if (!email) {
+  alert("Please log in first.");
+  window.location.href = "login.html";
+} else {
+  fetch(`/users/email/${encodeURIComponent(email)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.user) {
+        document.getElementById("speakerName").innerText = data.user.name || "Speaker";
+      }
+    })
+    .catch(() => {
+      document.getElementById("speakerName").innerText = "Speaker";
+    });
+}
+
+const commonToolbar = [
+  [{ 'header': [1, 2, 3, false] }],
+  ['bold', 'italic', 'underline'],
+  [{ 'color': [] }, { 'background': [] }],
+  [{ 'align': [] }],
+  ['link', { 'image': 'custom-image' }],
+  ['clean']
+];
+
+function selectImageHandler(event) {
+  const menu = document.createElement('div');
+  menu.className = 'tooltip-menu';
+
+  const uploadBtn = document.createElement('button');
+  uploadBtn.textContent = 'Upload Image';
+  uploadBtn.onclick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const range = window.currentEditor.getSelection();
+        window.currentEditor.insertEmbed(range.index, 'image', reader.result);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+    document.body.removeChild(menu);
+  };
+
+  const urlBtn = document.createElement('button');
+  urlBtn.textContent = 'Insert from URL';
+  urlBtn.onclick = () => {
+    const url = prompt("Enter image URL:");
+    if (url) {
+      const range = window.currentEditor.getSelection();
+      window.currentEditor.insertEmbed(range.index, 'image', url);
+    }
+    document.body.removeChild(menu);
+  };
+
+  menu.appendChild(uploadBtn);
+  menu.appendChild(urlBtn);
+  document.body.appendChild(menu);
+
+  menu.style.top = `${event.clientY}px`;
+  menu.style.left = `${event.clientX}px`;
+}
+
+Quill.register('modules/customImage', function (quill) {
+  const toolbar = quill.getModule('toolbar');
+  toolbar.addHandler('image', (event) => {
+    window.currentEditor = quill;
+    selectImageHandler(event);
+  });
+});
+
+const titleEditor = new Quill('#titleEditor', {
+  theme: 'snow',
+  placeholder: 'Write your story title...',
+  modules: { toolbar: commonToolbar }
+});
+
+const introEditor = new Quill('#introEditor', {
+  theme: 'snow',
+  placeholder: 'Write your intro...',
+  modules: { toolbar: commonToolbar }
+});
+
+const descriptionEditor = new Quill('#descriptionEditor', {
+  theme: 'snow',
+  placeholder: 'Write your full story here...',
+  modules: {
+    toolbar: commonToolbar,
+    customImage: true
+  }
+});
+
+document.getElementById("storyForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const title = titleEditor.root.innerHTML.trim();
+  const intro = introEditor.root.innerHTML.trim();
+  const description = descriptionEditor.root.innerHTML.trim();
+
+  if (!title || !intro || !description) {
+    alert("Please fill out Title, Intro, and Description.");
+    return;
+  }
+
+  const youtubeLink = document.getElementById("youtubeBox").value.trim();
+  const imageFile = document.getElementById("imageFile").files[0];
+  const imageUrl = document.getElementById("imageUrl").value.trim();
+
+  if (!imageFile && !imageUrl) {
+    alert("Please select a story image or provide an image URL.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("title", title);
+  formData.append("intro", intro);
+  formData.append("description", description);
+  formData.append("youtubeLink", youtubeLink);
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  } else {
+    formData.append("imageUrl", imageUrl);
+  }
+
+  try {
+    const response = await fetch("/upload/uploadStory", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      if (confirm("✅ Story posted successfully!\n\nClick OK to go to your story page.")) {
+        clearFormFields();
+
+        // Fetch speaker info again to get correct username from DB
+        fetch(`/users/email/${encodeURIComponent(email)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.user && data.user.user) {
+              const username = data.user.user.toLowerCase();
+              localStorage.setItem("username", username);
+              window.location.href = `${username}.html`;
+            } else {
+              alert("✅ Story posted, but couldn't find user info to redirect.");
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching user info:", err);
+            alert("✅ Story posted, but failed to redirect to your page.");
+          });
+      }
+    } else {
+      alert("❌ Upload failed: " + result.message);
+    }
+
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert("Something went wrong while uploading the story.");
+  }
+});
+
+function clearFormFields() {
+  titleEditor.setContents([]);
+  introEditor.setContents([]);
+  descriptionEditor.setContents([]);
+  document.getElementById("youtubeBox").value = "";
+  document.getElementById("imageFile").value = "";
+  document.getElementById("imageUrl").value = "";
+}
 </script>
 
 

@@ -55,12 +55,21 @@ input[type="file"],
 .current-image {
   margin-top: 10px;
 }
-.current-image img {
+/* .current-image img {
   width: 100%;
   max-width: 300px;
   border: 1px solid #ccc;
   border-radius: 4px;
   display: block;
+} */
+.current-image img {
+  width: auto;
+  max-width: 200px;
+  max-height: 200px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: block;
+  object-fit: cover;
 }
 .no-image-text {
   color: #666;

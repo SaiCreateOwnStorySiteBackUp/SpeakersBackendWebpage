@@ -273,9 +273,39 @@
     }
 
     // TODO: Send updatedStory data to your server using fetch/POST
+    const formData = new FormData();
+        formData.append("title", updatedStory.title);
+        formData.append("intro", updatedStory.intro);
+        formData.append("description", updatedStory.description);
+        formData.append("youtubeLink", updatedStory.youtubeLink);
 
-    alert('Story update logic to be implemented!');
-  });
+        if (updatedStory.imageFile) {
+          formData.append("image", updatedStory.imageFile);
+        } else if (updatedStory.imageUrl) {
+          formData.append("imageUrl", updatedStory.imageUrl);
+        }
+
+        try {
+          const res = await fetch(`/upload/updateStory/${updatedStory.id}`, {
+            method: "PUT",
+            body: formData
+          });
+
+          const result = await res.json();
+
+          if (result.success) {
+            alert("Story updated successfully!");
+            window.location.href = "/public/speakersDashboardUpdateStory.html";
+          } else {
+            alert("Failed to update story: " + result.message);
+          }
+        } catch (err) {
+          console.error("Error submitting update:", err);
+          alert("Error updating story. Please try again.");
+        }
+      });
+  //   alert('Story update logic to be implemented!');
+  // });
 </script>
 
 </body>

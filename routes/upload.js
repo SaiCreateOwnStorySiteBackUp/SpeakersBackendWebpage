@@ -320,6 +320,9 @@ router.put("/updateStory/:id", upload.single("image"), async (req, res) => {
         updateData.imageUrl = "/uploads/" + req.file.filename;
       }
     }
+    else if (req.body.imageUrl && req.body.imageUrl.trim() !== "") {
+  updateData.imageUrl = req.body.imageUrl.trim();
+}
 
     const updatedStory = await Story.findByIdAndUpdate(storyId, updateData, { new: true });
 

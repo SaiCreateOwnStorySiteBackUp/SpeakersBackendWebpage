@@ -5,102 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Speaker Dashboard - Create Story</title>
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
-  <style>
-    body {
-      background: #fff;
-      color: #000;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
+  <link rel="stylesheet" href="/cssStyles/speakerDashboardCreateButton.css">
 
-    header {
-      background: #333;
-      color: #fff;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .container {
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    input[type="text"], input[type="file"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-
-    .editor {
-      height: 150px;
-      background: #fff;
-    }
-
-    .post-btn {
-      background: #007BFF;
-      color: #fff;
-      padding: 12px 25px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      border-radius: 4px;
-    }
-
-    .post-btn:hover {
-      background: #0056b3;
-    }
-
-    .image-options {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .image-options input[type="file"],
-    .image-options input[type="text"] {
-      width: 48%;
-    }
-
-    .tooltip-menu {
-      position: fixed;
-      background: #f0f0f0;
-      border: 1px solid #ccc;
-      padding: 5px;
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    .tooltip-menu button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 5px 10px;
-      text-align: left;
-    }
-
-    .tooltip-menu button:hover {
-      background-color: #ddd;
-    }
-  </style>
 </head>
 <body>
 
@@ -445,18 +351,53 @@ document.getElementById("storyForm").addEventListener("submit", async function (
     });
 
     const result = await response.json();
-    if (result.success) {
-      alert("✅ Story posted successfully!");
-      const speakerPage = email.split("@")[0] + ".html";
-      window.location.href = speakerPage;
-    } else {
-      alert("❌ Upload failed: " + result.message);
-    }
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Something went wrong while uploading the story.");
+//     if (result.success) {
+//       alert("✅ Story posted successfully!");
+//       clearFormFields();
+//       // const speakerPage = email.split("@")[0] + ".html";
+//       const username = localStorage.getItem("user") || email.split("@")[0];
+//       window.location.href = `${username}.html`;
+//     } else {
+//       alert("❌ Upload failed: " + result.message);
+//     }
+//   } catch (err) {
+//     console.error("Upload error:", err);
+//     alert("Something went wrong while uploading the story.");
+//   }
+// });
+if (result.success) {
+  if (confirm("✅ Story posted successfully!\n\nClick OK to go to your story page.")) {
+    clearFormFields();
+
+    // Fetch speaker info again to get correct username from DB
+    fetch(`/users/email/${encodeURIComponent(email)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.user && data.user.user) {
+          const username = data.user.user.toLowerCase(); // Convert to lowercase
+          localStorage.setItem("username", username); // Store it for later use if needed
+          window.location.href = `${username}.html`;
+        } else {
+          alert("✅ Story posted, but couldn't find user info to redirect.");
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching user info:", err);
+        alert("✅ Story posted, but failed to redirect to your page.");
+      });
   }
-});
+} else {
+  alert("❌ Upload failed: " + result.message);
+}
+
+  function clearFormFields() {
+    titleEditor.setContents([]);
+    introEditor.setContents([]);
+    descriptionEditor.setContents([]);
+    document.getElementById("youtubeBox").value = "";
+    document.getElementById("imageFile").value = "";
+    document.getElementById("imageUrl").value = "";
+  }
 </script>
 
 

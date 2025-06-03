@@ -1,0 +1,94 @@
+body {
+  background: #fff;
+  color: #000;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  background: #333;
+  color: #fff;
+  padding: 15px;
+  text-align: center;
+}
+
+.container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: auto;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+input[type="text"], input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.editor {
+  height: 150px;
+  background: #fff;
+}
+
+.post-btn {
+  background: #007BFF;
+  color: #fff;
+  padding: 12px 25px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+}
+
+.post-btn:hover {
+  background: #0056b3;
+}
+
+.image-options {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.image-options input[type="file"],
+.image-options input[type="text"] {
+  width: 48%;
+}
+
+.tooltip-menu {
+  position: fixed;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 5px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.tooltip-menu button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  text-align: left;
+}
+
+.tooltip-menu button:hover {
+  background-color: #ddd;
+}

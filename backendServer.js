@@ -74,6 +74,7 @@ app.use("/admin", adminRoutes);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api/visitor', require('./routes/visitors'));
 
 // *******************************************************************
 // Page Routes for admin and login pages

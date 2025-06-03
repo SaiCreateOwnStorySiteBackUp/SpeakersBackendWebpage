@@ -2,6 +2,35 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user'); // ✅ Ensure lowercase if file is named 'user.js'
 
+
+router.get('/admin/userByEmail', async (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).send("Missing email");
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).send("User not found");
+
+  res.json({
+    name: user.name,
+    profileImage: user.profileImage,
+    bio: user.bio
+  });
+});
+
+router.get('/by-email', async (req, res) => {
+  const email = req.query.email;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json({ name: user.name });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // GET: Fetch user by email
 router.get('/email/:email', async (req, res) => {
   try {

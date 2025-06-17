@@ -76,6 +76,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/visitor', require('./routes/visitors'));
 
+const contactRoutes = require('./routes/contact');
+app.use('/api', contactRoutes);
+
 // *******************************************************************
 // Page Routes for admin and login pages
 app.get('/login', (req, res) => {

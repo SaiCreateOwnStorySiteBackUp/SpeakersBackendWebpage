@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Speaker Dashboard - Create Story</title>
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/cssStyles/speakerDashboardCreateButton.css">
+  <title>Speaker Dashboard – Create Story</title>
 
+  <!-- Quill CSS -->
+  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css" />
+  <!-- Your own styles -->
+  <link rel="stylesheet" href="/cssStyles/speakerDashboardCreateButton.css">
 </head>
 <body>
 
@@ -17,571 +19,172 @@
 <div class="container">
   <h2>Create New Story</h2>
 
-  <form id="storyForm" enctype="multipart/form-data">
+  <form id="storyForm" enctype="multipart/form-data" onsubmit="return false;">
+    <!-- ---------- IMAGE INPUT ---------- -->
     <div class="form-group">
-      <label for="storyImage">Story Image</label>
+      <label>Story Image</label>
       <div class="image-options">
-        <input type="file" id="imageFile" name="imageFile" />
-        <input type="text" id="imageUrl" name="imageUrl" placeholder="Or paste image URL..." />
+        <input type="file" id="imageFile"  accept="image/*">
+        <input type="text" id="imageUrl"  placeholder="…or paste image URL">
       </div>
     </div>
 
+    <!-- ---------- EDITORS ---------- -->
+    <div class="form-group"><label>Story Title</label><div id="titleEditor"        class="editor"></div></div>
+    <div class="form-group"><label>Intro</label>       <div id="introEditor"        class="editor"></div></div>
+    <div class="form-group"><label>Description</label> <div id="descriptionEditor"  class="editor"></div></div>
+
+    <!-- ---------- YOUTUBE ---------- -->
     <div class="form-group">
-      <label for="title">Story Title</label>
-      <div id="titleEditor" class="editor"></div>
+      <label>YouTube Link (Optional)</label>
+      <input type="text" id="youtubeBox" placeholder="https://youtube.com/…">
     </div>
 
-    <div class="form-group">
-      <label for="intro">Intro</label>
-      <div id="introEditor" class="editor"></div>
+    <!-- ---------- BUTTONS ---------- -->
+    <div class="btn-row">
+      <button type="button" class="post-btn"  id="publishBtn">🚀 Post Story</button>
+      <button type="button" class="draft-btn" id="draftBtn">💾 Save Draft</button>
     </div>
-
-    <div class="form-group">
-      <label for="description">Description</label>
-      <div id="descriptionEditor" class="editor"></div>
-    </div>
-
-    <div class="form-group">
-      <label for="youtubeBox">YouTube Link (Optional)</label>
-      <input type="text" id="youtubeBox" name="youtubeLink" placeholder="https://youtube.com/..." />
-    </div>
-
-    <button type="submit" class="post-btn">Post Story</button>
   </form>
 </div>
 
+<!-- Quill JS -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-<!-- <script>
-const email = localStorage.getItem("email");
-if (!email) {
-  alert("Please log in first.");
-  window.location.href = "login.html";
-} else {
-  fetch(`/users/email/${encodeURIComponent(email)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.user) {
-        document.getElementById("speakerName").innerText = data.user.name || "Speaker";
-      }
-    })
-    .catch(() => {
-      document.getElementById("speakerName").innerText = "Speaker";
-    });
-}
 
-const commonToolbar = [
-  [{ 'header': [1, 2, 3, false] }],
-  ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'align': [] }],
-  ['link', { 'image': 'custom-image' }],
-  ['clean']
-];
-
-function selectImageHandler() {
-  const menu = document.createElement('div');
-  menu.className = 'tooltip-menu';
-
-  const uploadBtn = document.createElement('button');
-  uploadBtn.textContent = 'Upload Image';
-  uploadBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const range = window.currentEditor.getSelection();
-        window.currentEditor.insertEmbed(range.index, 'image', reader.result);
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-    document.body.removeChild(menu);
-  };
-
-  const urlBtn = document.createElement('button');
-  urlBtn.textContent = 'Insert from URL';
-  urlBtn.onclick = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      const range = window.currentEditor.getSelection();
-      window.currentEditor.insertEmbed(range.index, 'image', url);
-    }
-    document.body.removeChild(menu);
-  };
-
-  menu.appendChild(uploadBtn);
-  menu.appendChild(urlBtn);
-  document.body.appendChild(menu);
-
-  menu.style.top = `${event.clientY}px`;
-  menu.style.left = `${event.clientX}px`;
-}
-
-Quill.register('modules/customImage', function(quill) {
-  const toolbar = quill.getModule('toolbar');
-  toolbar.addHandler('image', () => {
-    window.currentEditor = quill;
-    selectImageHandler();
-  });
-});
-
-const titleEditor = new Quill('#titleEditor', {
-  theme: 'snow',
-  placeholder: 'Write your story title...',
-  modules: { toolbar: commonToolbar }
-});
-
-const introEditor = new Quill('#introEditor', {
-  theme: 'snow',
-  placeholder: 'Write your intro...',
-  modules: { toolbar: commonToolbar }
-});
-
-const descriptionEditor = new Quill('#descriptionEditor', {
-  theme: 'snow',
-  placeholder: 'Write your full story here...',
-  modules: {
-    toolbar: commonToolbar,
-    customImage: true
-  }
-});
-
-document.getElementById("storyForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const title = titleEditor.root.innerHTML.trim();
-  const intro = introEditor.root.innerHTML.trim();
-  const description = descriptionEditor.root.innerHTML.trim();
-
-  if (!title || !intro || !description) {
-    alert("Please fill out Title, Intro, and Description.");
-    return;
-  }
-
-  const youtubeLink = document.getElementById("youtubeBox").value.trim();
-  const imageFile = document.getElementById("imageFile").files[0];
-  const imageUrl = document.getElementById("imageUrl").value.trim();
-
-  if (!imageFile && !imageUrl) {
-    alert("Please select a story image or provide an image URL.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("title", title);
-  formData.append("intro", intro);
-  formData.append("description", description);
-  formData.append("youtubeLink", youtubeLink);
-
-  if (imageFile) {
-    formData.append("image", imageFile);
-  } else {
-    formData.append("imageUrl", imageUrl);
-  }
-
-  try {
-    const response = await fetch("/upload/uploadStory", {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await response.json();
-    if (result.success) {
-      alert("✅ Story posted successfully!");
-      const speakerPage = email.split("@")[0] + ".html";
-      window.location.href = speakerPage;
-    } else {
-      alert("❌ Upload failed: " + result.message);
-    }
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Something went wrong while uploading the story.");
-  }
-});
-</script> -->
-
-<!-- No changes in <head> or styling, skipping ahead to script -->
-
-<!-- <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script> -->
-<!-- <script>
-const email = localStorage.getItem("email");
-if (!email) {
-  alert("Please log in first.");
-  window.location.href = "login.html";
-} else {
-  fetch(`/users/email/${encodeURIComponent(email)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.user) {
-        document.getElementById("speakerName").innerText = data.user.name || "Speaker";
-      }
-    })
-    .catch(() => {
-      document.getElementById("speakerName").innerText = "Speaker";
-    });
-}
-
-const commonToolbar = [
-  [{ 'header': [1, 2, 3, false] }],
-  ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'align': [] }],
-  ['link', { 'image': 'custom-image' }],
-  ['clean']
-];
-
-function selectImageHandler(event) {
-  const menu = document.createElement('div');
-  menu.className = 'tooltip-menu';
-
-  const uploadBtn = document.createElement('button');
-  uploadBtn.textContent = 'Upload Image';
-  uploadBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const range = window.currentEditor.getSelection();
-        window.currentEditor.insertEmbed(range.index, 'image', reader.result);
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-    document.body.removeChild(menu);
-  };
-
-  const urlBtn = document.createElement('button');
-  urlBtn.textContent = 'Insert from URL';
-  urlBtn.onclick = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      const range = window.currentEditor.getSelection();
-      window.currentEditor.insertEmbed(range.index, 'image', url);
-    }
-    document.body.removeChild(menu);
-  };
-
-  menu.appendChild(uploadBtn);
-  menu.appendChild(urlBtn);
-  document.body.appendChild(menu);
-
-  menu.style.top = `${event.clientY}px`;
-  menu.style.left = `${event.clientX}px`;
-}
-
-Quill.register('modules/customImage', function(quill) {
-  const toolbar = quill.getModule('toolbar');
-  toolbar.addHandler('image', (event) => {
-    window.currentEditor = quill;
-    selectImageHandler(event);
-  });
-});
-
-
-const titleEditor = new Quill('#titleEditor', {
-  theme: 'snow',
-  placeholder: 'Write your story title...',
-  modules: { toolbar: commonToolbar }
-});
-
-const introEditor = new Quill('#introEditor', {
-  theme: 'snow',
-  placeholder: 'Write your intro...',
-  modules: { toolbar: commonToolbar }
-});
-
-const descriptionEditor = new Quill('#descriptionEditor', {
-  theme: 'snow',
-  placeholder: 'Write your full story here...',
-  modules: {
-    toolbar: commonToolbar,
-    customImage: true
-  }
-});
-
-document.getElementById("storyForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const title = titleEditor.root.innerHTML.trim();
-  const intro = introEditor.root.innerHTML.trim();
-  const description = descriptionEditor.root.innerHTML.trim();
-
-  if (!title || !intro || !description) {
-    alert("Please fill out Title, Intro, and Description.");
-    return;
-  }
-
-  const youtubeLink = document.getElementById("youtubeBox").value.trim();
-  const imageFile = document.getElementById("imageFile").files[0];
-  const imageUrl = document.getElementById("imageUrl").value.trim();
-
-  if (!imageFile && !imageUrl) {
-    alert("Please select a story image or provide an image URL.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("title", title);
-  formData.append("intro", intro);
-  formData.append("description", description);
-  formData.append("youtubeLink", youtubeLink);
-
-  if (imageFile) {
-    formData.append("image", imageFile);
-  } else {
-    formData.append("imageUrl", imageUrl);
-  }
-
-  try {
-    const response = await fetch("/upload/uploadStory", {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await response.json();
-//     if (result.success) {
-//       alert("✅ Story posted successfully!");
-//       clearFormFields();
-//       // const speakerPage = email.split("@")[0] + ".html";
-//       const username = localStorage.getItem("user") || email.split("@")[0];
-//       window.location.href = `${username}.html`;
-//     } else {
-//       alert("❌ Upload failed: " + result.message);
-//     }
-//   } catch (err) {
-//     console.error("Upload error:", err);
-//     alert("Something went wrong while uploading the story.");
-//   }
-// });
-if (result.success) {
-  if (confirm("✅ Story posted successfully!\n\nClick OK to go to your story page.")) {
-    clearFormFields();
-
-    // Fetch speaker info again to get correct username from DB
-    fetch(`/users/email/${encodeURIComponent(email)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.user && data.user.user) {
-          const username = data.user.user.toLowerCase(); // Convert to lowercase
-          localStorage.setItem("username", username); // Store it for later use if needed
-          window.location.href = `${username}.html`;
-        } else {
-          alert("✅ Story posted, but couldn't find user info to redirect.");
-        }
-      })
-      .catch(err => {
-        console.error("Error fetching user info:", err);
-        alert("✅ Story posted, but failed to redirect to your page.");
-      });
-  }
-} else {
-  alert("❌ Upload failed: " + result.message);
-}
-
-  function clearFormFields() {
-    titleEditor.setContents([]);
-    introEditor.setContents([]);
-    descriptionEditor.setContents([]);
-    document.getElementById("youtubeBox").value = "";
-    document.getElementById("imageFile").value = "";
-    document.getElementById("imageUrl").value = "";
-  }
-</script> -->
 <script>
+/* ------------------------------------------------------------------
+   0.  BASIC USER INFO
+------------------------------------------------------------------- */
 const email = localStorage.getItem("email");
-if (!email) {
-  alert("Please log in first.");
-  window.location.href = "login.html";
-} else {
-  fetch(`/users/email/${encodeURIComponent(email)}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.success && data.user) {
-        document.getElementById("speakerName").innerText = data.user.name || "Speaker";
-      }
-    })
-    .catch(() => {
-      document.getElementById("speakerName").innerText = "Speaker";
-    });
-}
+if (!email) { alert("Please log in first."); location.href = "login.html"; }
 
+fetch(`/users/email/${encodeURIComponent(email)}`)
+  .then(r => r.json())
+  .then(d => { if (d.success && d.user) document.getElementById("speakerName").textContent = d.user.name || "Speaker"; })
+  .catch(()=>{/* ignore */});
+
+/* ------------------------------------------------------------------
+   1.  TOOLBAR + IMAGE HANDLER  (unchanged – keep what you have)
+------------------------------------------------------------------- */
 const commonToolbar = [
-  [{ 'header': [1, 2, 3, false] }],
-  ['bold', 'italic', 'underline'],
-  [{ 'color': [] }, { 'background': [] }],
-  [{ 'align': [] }],
-  ['link', { 'image': 'custom-image' }],
-  ['clean']
+  [{ header:[1,2,3,false] }], ['bold','italic','underline'],
+  [{ color:[] },{ background:[] }], [{ align:[] }],
+  ['link','image'], ['clean']
 ];
 
-function selectImageHandler(event) {
-  const menu = document.createElement('div');
-  menu.className = 'tooltip-menu';
+// popup with “Upload Image / Insert URL”
+function selectImageHandler(e){
+  const menu=document.createElement('div'); menu.className='tooltip-menu';
 
-  const uploadBtn = document.createElement('button');
-  uploadBtn.textContent = 'Upload Image';
-  uploadBtn.onclick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const range = window.currentEditor.getSelection();
-        window.currentEditor.insertEmbed(range.index, 'image', reader.result);
-      };
-      reader.readAsDataURL(file);
+  const bUpload=document.createElement('button'); bUpload.textContent='Upload Image';
+  bUpload.onclick=()=>{
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+    inp.onchange=()=>{
+      const f=inp.files[0]; if(!f) return;
+      const r=new FileReader();
+      r.onload=()=>{ const range=window.currentEditor.getSelection(); window.currentEditor.insertEmbed(range.index,'image',r.result); };
+      r.readAsDataURL(f);
     };
-    input.click();
+    inp.click(); document.body.removeChild(menu);
+  };
+
+  const bURL=document.createElement('button'); bURL.textContent='Insert URL';
+  bURL.onclick=()=>{
+    const url=prompt("Enter image URL:");
+    if(url){ const range=window.currentEditor.getSelection(); window.currentEditor.insertEmbed(range.index,'image',url); }
     document.body.removeChild(menu);
   };
 
-  const urlBtn = document.createElement('button');
-  urlBtn.textContent = 'Insert from URL';
-  urlBtn.onclick = () => {
-    const url = prompt("Enter image URL:");
-    if (url) {
-      const range = window.currentEditor.getSelection();
-      window.currentEditor.insertEmbed(range.index, 'image', url);
-    }
-    document.body.removeChild(menu);
-  };
-
-  menu.appendChild(uploadBtn);
-  menu.appendChild(urlBtn);
-  document.body.appendChild(menu);
-
-  menu.style.top = `${event.clientY}px`;
-  menu.style.left = `${event.clientX}px`;
+  menu.appendChild(bUpload); menu.appendChild(bURL); document.body.appendChild(menu);
+  menu.style.top=`${e.clientY}px`; menu.style.left=`${e.clientX}px`;
 }
 
-Quill.register('modules/customImage', function (quill) {
-  const toolbar = quill.getModule('toolbar');
-  toolbar.addHandler('image', (event) => {
-    window.currentEditor = quill;
-    selectImageHandler(event);
-  });
+// register once
+Quill.register('modules/customImage', function (q){
+  const tb = q.getModule('toolbar');
+  tb.addHandler('image', (e)=>{ window.currentEditor=q; selectImageHandler(e); });
 });
 
-const titleEditor = new Quill('#titleEditor', {
-  theme: 'snow',
-  placeholder: 'Write your story title...',
-  modules: { toolbar: commonToolbar }
+/* ------------------------------------------------------------------
+   2.  QUILL INSTANCES
+------------------------------------------------------------------- */
+const titleEditor = new Quill('#titleEditor',       { theme:'snow', placeholder:'Story title…',  modules:{ toolbar:commonToolbar }});
+const introEditor = new Quill('#introEditor',       { theme:'snow', placeholder:'Intro…',         modules:{ toolbar:commonToolbar }});
+const descriptionEditor = new Quill('#descriptionEditor',{
+  theme:'snow', placeholder:'Full story…',
+  modules:{ toolbar:commonToolbar, customImage:true }
 });
 
-const introEditor = new Quill('#introEditor', {
-  theme: 'snow',
-  placeholder: 'Write your intro...',
-  modules: { toolbar: commonToolbar }
-});
+/* ------------------------------------------------------------------
+   3.  SUBMIT HELPER
+------------------------------------------------------------------- */
+function submitStory(status){                  // status = 'draft' | 'published'
+  // --- grab once ---
+  const titlePlain  = titleEditor.getText().trim();
+  if(!titlePlain){ alert("❗ Please enter a Story Title."); return; }
 
-const descriptionEditor = new Quill('#descriptionEditor', {
-  theme: 'snow',
-  placeholder: 'Write your full story here...',
-  modules: {
-    toolbar: commonToolbar,
-    customImage: true
-  }
-});
-
-document.getElementById("storyForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
-
-  const title = titleEditor.root.innerHTML.trim();
-  const intro = introEditor.root.innerHTML.trim();
+  const intro       = introEditor.root.innerHTML.trim();
   const description = descriptionEditor.root.innerHTML.trim();
-
-  if (!title || !intro || !description) {
-    alert("Please fill out Title, Intro, and Description.");
-    return;
-  }
-
   const youtubeLink = document.getElementById("youtubeBox").value.trim();
-  const imageFile = document.getElementById("imageFile").files[0];
-  const imageUrl = document.getElementById("imageUrl").value.trim();
+  const imageFile   = document.getElementById("imageFile").files[0];
+  const imageUrl    = document.getElementById("imageUrl").value.trim();
 
-  if (!imageFile && !imageUrl) {
-    alert("Please select a story image or provide an image URL.");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("title", title);
-  formData.append("intro", intro);
-  formData.append("description", description);
-  formData.append("youtubeLink", youtubeLink);
-
-  if (imageFile) {
-    formData.append("image", imageFile);
-  } else {
-    formData.append("imageUrl", imageUrl);
-  }
-
-  try {
-    const response = await fetch("/upload/uploadStory", {
-      method: "POST",
-      body: formData
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      if (confirm("✅ Story posted successfully!\n\nClick OK to go to your story page.")) {
-        clearFormFields();
-
-        // Fetch speaker info again to get correct username from DB
-        fetch(`/users/email/${encodeURIComponent(email)}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && data.user && data.user.user) {
-              const username = data.user.user.toLowerCase();
-              localStorage.setItem("username", username);
-              window.location.href = `${username}.html`;
-            } else {
-              alert("✅ Story posted, but couldn't find user info to redirect.");
-            }
-          })
-          .catch(err => {
-            console.error("Error fetching user info:", err);
-            alert("✅ Story posted, but failed to redirect to your page.");
-          });
-      }
-    } else {
-      alert("❌ Upload failed: " + result.message);
+  // --- content validation ---
+  if (status==="published") {
+    if (!intro || !description){
+      alert("Please complete Intro and Description before publishing."); return;
     }
-
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Something went wrong while uploading the story.");
+    // at least one media item
+    if (!imageFile && !imageUrl && !youtubeLink){
+      alert("Please provide an image OR a YouTube link before publishing."); return;
+    }
+    // optional: avoid both
+    if ((imageFile || imageUrl) && youtubeLink){
+      alert("Please choose either an image OR a YouTube link, not both."); return;
+    }
   }
-});
 
-function clearFormFields() {
-  titleEditor.setContents([]);
-  introEditor.setContents([]);
-  descriptionEditor.setContents([]);
-  document.getElementById("youtubeBox").value = "";
-  document.getElementById("imageFile").value = "";
-  document.getElementById("imageUrl").value = "";
+  // --- build FormData ---
+  const fd = new FormData();
+  fd.append("email",  email);
+  fd.append("status", status);          // draft / published
+  fd.append("title",  titleEditor.root.innerHTML.trim());
+  fd.append("intro",  intro);
+  fd.append("description", description);
+  fd.append("youtubeLink", youtubeLink);
+  if (imageFile)     fd.append("image",    imageFile);
+  else if (imageUrl) fd.append("imageUrl", imageUrl);
+
+  // --- send ---
+  fetch("/upload/uploadStory",{ method:"POST", body:fd })
+    .then(r => r.json())
+    .then(res=>{
+      if(res.success){
+        alert(status==="draft" ? "💾 Draft saved!" : "✅ Story published!");
+        clearForm();
+        // location.href="splSpeakershome.html"
+        if(status==="published") location.href="splSpeakershome.html";
+      } else {
+        alert("❌ "+(res.message||"Failed."));
+      }
+    })
+    .catch(err=>{ console.error(err); alert("Network / server error."); });
+}
+
+/* ------------------------------------------------------------------
+   4.  BUTTON HOOKS  (unchanged)
+------------------------------------------------------------------- */
+document.getElementById("draftBtn")  .onclick = ()=>submitStory("draft");
+document.getElementById("publishBtn").onclick = ()=>submitStory("published");
+
+/* ------------------------------------------------------------------
+   5.  CLEAR FORM
+------------------------------------------------------------------- */
+function clearForm(){
+  [titleEditor,introEditor,descriptionEditor].forEach(ed=>ed.setContents([]));
+  ["youtubeBox","imageFile","imageUrl"].forEach(id=>document.getElementById(id).value="");
 }
 </script>
-
 
 </body>
 </html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Story - Seshu</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/cssStyles/speakerDashboardCreateButton.css" />
+</head>
+<body>
+<header><h1>Edit Story</h1></header>
+
+<main class="container">
+  <form id="editForm" enctype="multipart/form-data">
+    <input type="hidden" id="storyId" />
+
+    <!-- Image Input Section -->
+    <div class="form-group">
+      <label>Update Story Image</label>
+      <div id="imageInputButtons" style="margin-bottom:8px;">
+        <button type="button" id="uploadImageBtn" class="active">Upload Image File</button>
+        <button type="button" id="insertUrlBtn">Insert Image URL</button>
+      </div>
+      <div id="imageInputSections">
+        <div id="uploadImageSection">
+          <input type="file" id="image" name="image" accept="image/*" />
+        </div>
+        <div id="insertUrlSection" style="display:none;">
+          <input type="text" id="imageUrlInput" placeholder="Paste image URL here" />
+        </div>
+      </div>
+      <div class="current-image">
+        <img id="existingImage" src="" alt="Current Story Image" style="display:none;" />
+        <p id="noImageText" style="display:none;">No image available</p>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="form-group">
+      <label>Story Title</label>
+      <div id="titleEditor" class="editor"></div>
+    </div>
+
+    <!-- Intro -->
+    <!-- <div class="form-group">
+      <label>Intro</label>
+      <div id="introEditor" class="editor"></div>
+    </div> -->
+
+    <!-- Description -->
+    <div class="form-group">
+      <label>Description</label>
+      <div id="descriptionEditor" class="editor"></div>
+    </div>
+
+    <!-- YouTube -->
+    <div class="form-group">
+      <label>YouTube Link (Optional)</label>
+      <input type="text" id="youtubeBox" placeholder="https://youtube.com/..." />
+    </div>
+
+    <!-- State -->
+    <div class="form-group">
+      <label>State</label>
+      <select id="stateSelect" onchange="loadLocalities()">
+        <option value="">Select State</option>
+      </select>
+    </div>
+
+    <!-- Locality -->
+    <div class="form-group">
+      <label>Locality</label>
+      <select id="localitySelect" required>
+        <option value="">Select Locality</option>
+      </select>
+    </div>
+
+    <!-- Update Button -->
+    <button type="submit" class="post-btn">Update Story</button>
+  </form>
+</main>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+  // const localityMap = {
+  //   Telangana: ["Miyapur", "Gangaram", "Kukatpally"],
+  //   Karnataka: ["Whitefield", "Marathahalli"],
+  //   Chennai: ["T. Nagar", "Velachery", "Guindy"],
+  //   "Andhra Pradesh": ["Guntur", "Vijayawada", "Vizag"]
+  // };
+  //
+  // function updateLocalities() {
+  //   const state = document.getElementById("stateSelect").value;
+  //   const localitySelect = document.getElementById("localitySelect");
+  //   localitySelect.innerHTML = '<option value="">Select Locality</option>';
+  //   (localityMap[state] || []).forEach(loc => {
+  //     const opt = document.createElement("option");
+  //     opt.value = loc;
+  //     opt.textContent = loc;
+  //     localitySelect.appendChild(opt);
+  //   });
+  // }
+
+  // Load states
+  async function loadStates() {
+    try {
+      const res = await fetch('/states');
+      const data = await res.json();
+      const select = document.getElementById('stateSelect');
+      select.innerHTML = `<option value="">Select State</option>`;
+      if (data.success && Array.isArray(data.states)) {
+        data.states.forEach(state => {
+          const opt = document.createElement('option');
+          opt.value = state.state;
+          opt.textContent = state.state;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load states:', err);
+    }
+  }
+
+  // Load localities for selected state
+  async function loadLocalities() {
+    const state = document.getElementById('stateSelect').value;
+    const localitySelect = document.getElementById('localitySelect');
+    localitySelect.innerHTML = '<option value="">Select Locality</option>';
+    if (!state) return;
+
+    try {
+      const res = await fetch(`/localities/${encodeURIComponent(state)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.localities)) {
+        data.localities.forEach(loc => {
+          const opt = document.createElement('option');
+          opt.value = loc;
+          opt.textContent = loc;
+          localitySelect.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('Error loading localities:', err);
+    }
+  }
+
+  // let titleEditor, introEditor, descriptionEditor, originalStory;
+  let titleEditor, descriptionEditor, originalStory;
+
+  function imageHandler() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const range = descriptionEditor.getSelection(true);
+          descriptionEditor.insertEmbed(range.index, 'image', e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  }
+
+  window.onload = async () => {
+    const storyId = new URLSearchParams(window.location.search).get('edit');
+    if (!storyId) return alert("Missing story ID");
+
+    try {
+      await loadStates();
+
+      // const res = await fetch(`/stories/${storyId}`);
+      const res = await fetch(`/splStory/${storyId}`);
+      const story = await res.json();
+      if (!story || !story._id) return alert("Invalid story");
+
+      originalStory = story;
+      document.getElementById("storyId").value = story._id;
+      document.getElementById("youtubeBox").value = story.youtubeLink || '';
+      document.getElementById("imageUrlInput").value = story.imageUrl || '';
+
+      updateExistingImage(story.imageUrl);
+
+      titleEditor = new Quill('#titleEditor', { theme: 'snow' });
+      // introEditor = new Quill('#introEditor', { theme: 'snow' });
+      descriptionEditor = new Quill('#descriptionEditor', {
+        theme: 'snow',
+        modules: {
+          toolbar: {
+            container: [['bold', 'italic'], ['image']],
+            handlers: { image: imageHandler }
+          }
+        }
+      });
+
+      titleEditor.clipboard.dangerouslyPasteHTML(story.title || '');
+      // introEditor.clipboard.dangerouslyPasteHTML(story.intro || '');
+      descriptionEditor.clipboard.dangerouslyPasteHTML(story.description || '');
+
+      if (story.imageUrl && story.imageUrl.startsWith("http")) {
+        showImageUrlInput();
+      } else {
+        showImageUploadInput();
+      }
+
+      // Set state/locality
+      document.getElementById("stateSelect").value = story.state || '';
+      await loadLocalities(); // properly fetch and populate localities
+      document.getElementById("localitySelect").value = story.locality || '';
+
+    } catch (err) {
+      console.error(err);
+      alert("Error loading story");
+    }
+  };
+
+  function updateExistingImage(imageUrl) {
+  const img = document.getElementById("existingImage");
+  const txt = document.getElementById("noImageText");
+
+  const container = document.querySelector(".current-image");
+
+  // Clear old iframe if any
+  const oldIframe = container.querySelector("iframe");
+  if (oldIframe) oldIframe.remove();
+
+  if (imageUrl) {
+    img.src = imageUrl;
+    img.style.display = "block";
+    txt.style.display = "none";
+  } else if (originalStory.youtubeLink) {
+    const youtubeLink = originalStory.youtubeLink;
+    let embedUrl = youtubeLink.includes("watch?v=")
+      ? youtubeLink.replace("watch?v=", "embed/")
+      : youtubeLink.replace("youtu.be/", "youtube.com/embed/");
+
+    const iframe = document.createElement("iframe");
+    iframe.src = embedUrl;
+    iframe.width = "100%";
+    iframe.height = "200";
+    iframe.frameBorder = "0";
+    iframe.allowFullscreen = true;
+
+    container.appendChild(iframe);
+
+    img.style.display = "none";
+    txt.style.display = "none";
+  } else {
+    img.style.display = "none";
+    txt.style.display = "block";
+  }
+}
+
+
+
+  function showImageUploadInput() {
+    document.getElementById("uploadImageSection").style.display = "block";
+    document.getElementById("insertUrlSection").style.display = "none";
+  }
+
+  function showImageUrlInput() {
+    document.getElementById("uploadImageSection").style.display = "none";
+    document.getElementById("insertUrlSection").style.display = "block";
+  }
+
+  document.getElementById("uploadImageBtn").onclick = showImageUploadInput;
+  document.getElementById("insertUrlBtn").onclick = showImageUrlInput;
+
+  function plainText(html) {
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      return div.textContent.trim();
+    }
+
+  document.getElementById("editForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const storyId = document.getElementById("storyId").value;
+    const title = titleEditor.root.innerHTML.trim();
+    // const intro = introEditor.root.innerHTML.trim();
+    const description = descriptionEditor.root.innerHTML.trim();
+    const youtubeLink = document.getElementById("youtubeBox").value.trim();
+    const state = document.getElementById("stateSelect").value;
+    const locality = document.getElementById("localitySelect").value;
+    const imageFile = document.getElementById("image").files[0];
+    const imageUrl = document.getElementById("imageUrlInput").value.trim();
+
+    // if (!title || !intro || !description || !state || !locality)
+    if (!title || !description || !state || !locality) {
+      alert("Please fill all required fields");
+      return;
+    }
+
+    // ✅ PASTE THIS CHECK BLOCK HERE
+  // const isTitleSame = plainText(title) === plainText(originalStory.title || '');
+  const isTitleSame = plainText(titleEditor.root.innerHTML) === plainText(originalStory.title || '');
+  const isDescriptionSame = description === (originalStory.description || '').trim();
+  const isYoutubeSame = youtubeLink === (originalStory.youtubeLink || '').trim();
+  const isStateSame = state === (originalStory.state || '');
+  const isLocalitySame = locality === (originalStory.locality || '');
+  const isImageSame = (
+    (!imageFile && !imageUrl && originalStory.imageUrl) ||
+    (imageUrl && imageUrl === originalStory.imageUrl)
+  );
+
+  if (
+    isTitleSame &&
+    isDescriptionSame &&
+    isYoutubeSame &&
+    isStateSame &&
+    isLocalitySame &&
+    isImageSame
+  ) {
+    alert("⚠️ No changes detected. Please modify something before updating.");
+    return;
+  }
+
+    const formData = new FormData();
+    const email = localStorage.getItem("email"); // assuming same logic
+    formData.append("email", email);
+    formData.append("title", title);
+    // formData.append("intro", intro);
+    formData.append("description", description);
+    formData.append("youtubeLink", youtubeLink);
+    formData.append("state", state);
+    formData.append("locality", locality);
+    if (imageFile) {
+      formData.append("image", imageFile);
+    } else if (imageUrl) {
+      formData.append("imageUrl", imageUrl);
+    }
+
+    try {
+      console.log("Submitting update for storyId:", storyId);
+      console.log("Form data: ", {
+        title,
+        description,
+        youtubeLink,
+        state,
+        locality,
+        imageFile,
+        imageUrl
+      });
+      const res = await fetch(`/splUpload/updateStory/${storyId}`, {
+        method: "PUT",
+        body: formData
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        alert("✅ Story updated!");
+        window.location.href = "/splSpeakersEditButton.html";
+      } else {
+        alert("❌ Update failed: " + result.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error updating story");
+    }
+  });
+</script>
+</body>
+</html>

@@ -6,62 +6,6 @@
   <!-- 👇 critical for proper mobile scaling -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="/cssStyles/login.css">
-  <!-- <style>
-    body {
-      font-family: Arial;
-      background: #f4f4f4;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    .login-box {
-      width: 300px;
-      padding: 20px;
-      background: white;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    input[type="email"],
-    input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      box-sizing: border-box;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background: black;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    .link-row {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
-    }
-
-    .link-row a {
-      font-size: 12px;
-      text-decoration: none;
-      color: #0077cc;
-    }
-
-    .link-row a:hover {
-      text-decoration: underline;
-    }
-  </style> -->
 </head>
 <body>
   <div class="login-box">
@@ -78,44 +22,54 @@
   </div>
 
   <script>
-    document.getElementById("loginForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
+  document.getElementById("loginForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const password = document.getElementById("password").value;
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    const password = document.getElementById("password").value;
 
-      try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ email, password })
-        });
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (response.ok) {
-          localStorage.setItem("email", data.email);
-          localStorage.setItem("role", data.role);
+      if (response.ok && data.success && data.user) {
+        const role = (data.user.role || "").trim().toLowerCase();
+        const speakerName = (data.user.name || "").trim();
 
-          alert("Login successful!");
-          const role = (data.role || "").trim().toLowerCase();
-          if (role === "admin") {
-            window.location.href = "admin/adminDashboardUi.html";
-          } else if (role === "speaker") {
-            window.location.href = "speakersHome.html";
+        // Save into localStorage
+        localStorage.setItem("email", data.user.email);
+        localStorage.setItem("role", role);
+        localStorage.setItem("name", speakerName);
+
+        alert("Login successful!");
+
+        if (role === "admin") {
+          window.location.href = "admin/adminDashboardUi.html";
+        } else if (role === "speaker") {
+          if (speakerName.toLowerCase() === "seshu") {
+            window.location.href = "splSpeakershome.html";
           } else {
-            alert("Unknown role. Please contact administrator.");
+            window.location.href = "speakersHome.html";
           }
         } else {
-          alert("Login failed: " + data.error);
+          alert("Unknown role. Please contact administrator.");
         }
-      } catch (error) {
-        console.error("Login error:", error);
-        alert("Server error, please try again.");
+      } else {
+        alert("Login failed: " + (data.error || "Unknown error"));
       }
-    });
-  </script>
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("Server error, please try again.");
+    }
+  });
+</script>
+
 </body>
 </html>

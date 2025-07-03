@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Locality - Seshu</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/cssStyles/splAddLocalities.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Add Locality</h1>
+
+    <div class="form-group">
+      <label for="stateSelect">Select State</label>
+      <select id="stateSelect" onchange="fetchLocalities()">
+        <option value="">-- Choose State --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="newLocality">Enter New Locality</label>
+      <div class="add-section">
+        <input type="text" id="newLocality" placeholder="Enter locality name..." />
+        <button onclick="addLocality()">Add</button>
+      </div>
+    </div>
+
+    <!-- <ul id="localityList" class="locality-list grid-layout"> -->
+      <!-- Localities under selected state will load here -->
+    <!-- </ul> -->
+    <!-- <div class="pagination" id="paginationControls"></div> -->
+    <div id="localityContainer">
+      <div id="localityGrid" class="grid-container"></div>
+      <div id="paginationControls" class="pagination"></div>
+    </div>
+    <a href="splSpeakershome.html" class="back-btn">← Back to Dashboard</a>
+  </div>
+
+  <!-- <script>
+  async function loadStates() {
+    try {
+      const res = await fetch('/states');
+      const data = await res.json();
+      const select = document.getElementById('stateSelect');
+      select.innerHTML = `<option value="">-- Choose State --</option>`;
+
+      if (data.success && Array.isArray(data.states)) {
+        data.states.forEach(state => {
+          const opt = document.createElement('option');
+          opt.value = state.state;
+          opt.textContent = state.state;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('Error loading states:', err);
+    }
+  }
+
+  async function fetchLocalities() {
+    const state = document.getElementById('stateSelect').value;
+    const list = document.getElementById('localityList');
+    list.innerHTML = '';
+
+    if (!state) return;
+
+    try {
+      const res = await fetch(`/localities/${encodeURIComponent(state)}`);
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.localities)) {
+        data.localities.forEach(loc => {
+          const li = document.createElement('li');
+          li.setAttribute('data-locality', loc);
+          li.innerHTML = `
+            <span class="locality-name">${loc}</span>
+            <input type="text" class="edit-input" value="${loc}" style="display:none;" />
+            <button onclick="editLocality('${loc}')" title="Edit Locality">📝</button>
+            <button onclick="saveLocality('${loc}')" title="Save Locality" style="display:none;">💾</button>
+            <button onclick="deleteLocality('${loc}')" title="Delete Locality">🗑️</button>
+          `;
+          list.appendChild(li);
+        });
+      } else {
+        list.innerHTML = '<li>No localities found for this state.</li>';
+      }
+    } catch (err) {
+      console.error('Error fetching localities:', err);
+      list.innerHTML = '<li>Failed to load localities.</li>';
+    }
+  }
+
+  function editLocality(name) {
+    document.querySelectorAll('#localityList li').forEach(li => {
+      li.querySelector('.locality-name').style.display = 'inline';
+      li.querySelector('.edit-input').style.display = 'none';
+      li.querySelector('button[onclick^="saveLocality"]').style.display = 'none';
+    });
+
+    const li = document.querySelector(`li[data-locality="${name}"]`);
+    if (!li) return;
+
+    li.querySelector('.locality-name').style.display = 'none';
+    li.querySelector('.edit-input').style.display = 'inline';
+    li.querySelector('button[onclick^="saveLocality"]').style.display = 'inline';
+  }
+
+  async function saveLocality(oldName) {
+    const li = document.querySelector(`li[data-locality="${oldName}"]`);
+    const input = li.querySelector('.edit-input');
+    const newName = input.value.trim();
+    const state = document.getElementById('stateSelect').value;
+
+    if (!newName) return alert('Locality name cannot be empty');
+
+    if (newName === oldName) {
+      alert("⚠️ No changes detected.");
+      fetchLocalities();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/localities/update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, oldLocality: oldName, newLocality: newName })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert('✅ Locality updated successfully');
+        fetchLocalities();
+      } else {
+        alert('❌ ' + (result.message || 'Failed to update locality'));
+      }
+    } catch (err) {
+      console.error('Error updating locality:', err);
+      alert('Something went wrong while updating.');
+    }
+  }
+
+  async function deleteLocality(name) {
+    const state = document.getElementById('stateSelect').value;
+    if (!state || !name) return;
+
+    if (!confirm("Are you sure you want to delete this locality?")) return;
+
+    try {
+      const res = await fetch(`/localities/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, locality: name })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert('✅ Locality deleted');
+        fetchLocalities();
+      } else {
+        alert('❌ ' + (result.message || 'Failed to delete locality'));
+      }
+    } catch (err) {
+      console.error('Error deleting locality:', err);
+      alert('Something went wrong while deleting.');
+    }
+  }
+
+  async function addLocality() {
+    const state = document.getElementById('stateSelect').value;
+    const locality = document.getElementById('newLocality').value.trim();
+
+    if (!state || !locality) {
+      alert('Please select a state and enter a locality.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/localities/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, locality })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert("✅ Locality added successfully!");
+        document.getElementById('newLocality').value = '';
+        fetchLocalities();
+      } else {
+        alert("❌ " + (result.message || "Failed to add locality"));
+      }
+    } catch (err) {
+      console.error('Error adding locality:', err);
+      alert("Something went wrong while adding the locality.");
+    }
+  }
+
+  window.onload = loadStates;
+</script> -->
+<script>
+  let allLocalities = [];
+  let currentPage = 1;
+  const itemsPerPage = 6;
+
+  async function loadStates() {
+    try {
+      const res = await fetch('/states');
+      const data = await res.json();
+      const select = document.getElementById('stateSelect');
+      select.innerHTML = `<option value="">-- Choose State --</option>`;
+
+      if (data.success && Array.isArray(data.states)) {
+        data.states.forEach(state => {
+          const opt = document.createElement('option');
+          opt.value = state.state;
+          opt.textContent = state.state;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.error('Error loading states:', err);
+    }
+  }
+
+  async function fetchLocalities() {
+    const state = document.getElementById('stateSelect').value;
+    if (!state) return;
+
+    try {
+      const res = await fetch(`/localities/${encodeURIComponent(state)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.localities)) {
+        allLocalities = data.localities;
+        currentPage = 1;
+        renderLocalities();
+      } else {
+        document.getElementById('localityGrid').innerHTML = '<p>No localities found.</p>';
+      }
+    } catch (err) {
+      console.error('Error fetching localities:', err);
+    }
+  }
+
+  // function renderLocalities() {
+  //   const container = document.getElementById('localityGrid');
+  //   container.innerHTML = '';
+  //   const start = (currentPage - 1) * itemsPerPage;
+  //   const localitiesToShow = allLocalities.slice(start, start + itemsPerPage);
+  //
+  //   localitiesToShow.forEach(loc => {
+  //     const div = document.createElement('div');
+  //     div.className = 'locality-box';
+  //     div.setAttribute('data-locality', loc);
+  //
+  //     div.innerHTML = `
+  //       <span class="locality-name">${loc}</span>
+  //       <input type="text" class="edit-input" value="${loc}" style="display: none;" />
+  //       <button onclick="editLocality('${loc}')" title="Edit Locality">📝</button>
+  //       <button onclick="saveLocality('${loc}')" title="Save Locality" style="display: none;">💾</button>
+  //       <button onclick="deleteLocality('${loc}')" title="Delete Locality">🗑️</button>
+  //     `;
+  //
+  //     container.appendChild(div);
+  //   });
+  //
+  //   renderPagination();
+  // }
+  function renderLocalities() {
+  const container = document.getElementById('localityGrid');
+  container.innerHTML = '';
+
+  const start = (currentPage - 1) * itemsPerPage;
+  const localitiesToShow = allLocalities.slice(start, start + itemsPerPage);
+
+  // Prepare 2 columns
+  const col1 = document.createElement('div');
+  const col2 = document.createElement('div');
+  col1.className = 'column';
+  col2.className = 'column';
+
+  localitiesToShow.forEach((loc, index) => {
+    const div = document.createElement('div');
+    div.className = 'locality-box';
+    div.setAttribute('data-locality', loc);
+    div.innerHTML = `
+      <span class="locality-name">${loc}</span>
+      <input type="text" class="edit-input" value="${loc}" style="display: none;" />
+      <button onclick="editLocality('${loc}')" title="Edit Locality">📝</button>
+      <button onclick="saveLocality('${loc}')" title="Save Locality" style="display: none;">💾</button>
+      <button onclick="deleteLocality('${loc}')" title="Delete Locality">🗑️</button>
+    `;
+
+    if (index < 3) {
+      col1.appendChild(div);
+    } else {
+      col2.appendChild(div);
+    }
+  });
+
+  container.appendChild(col1);
+  container.appendChild(col2);
+
+  renderPagination();
+}
+
+
+  function renderPagination() {
+    const totalPages = Math.ceil(allLocalities.length / itemsPerPage);
+    const pagination = document.getElementById('paginationControls');
+    pagination.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    const createBtn = (text, disabled, page) => {
+      const btn = document.createElement('button');
+      btn.textContent = text;
+      if (disabled) btn.disabled = true;
+      btn.onclick = () => {
+        currentPage = page;
+        renderLocalities();
+      };
+      return btn;
+    };
+
+    pagination.appendChild(createBtn('<<', currentPage === 1, 1));
+    pagination.appendChild(createBtn('<', currentPage === 1, currentPage - 1));
+
+    for (let i = 1; i <= totalPages; i++) {
+      const btn = createBtn(i, false, i);
+      if (i === currentPage) btn.classList.add('active');
+      pagination.appendChild(btn);
+    }
+
+    pagination.appendChild(createBtn('>', currentPage === totalPages, currentPage + 1));
+    pagination.appendChild(createBtn('>>', currentPage === totalPages, totalPages));
+  }
+
+  function editLocality(name) {
+    document.querySelectorAll('.locality-box').forEach(box => {
+      box.querySelector('.locality-name').style.display = 'inline';
+      box.querySelector('.edit-input').style.display = 'none';
+      box.querySelector('button[onclick^="saveLocality"]').style.display = 'none';
+    });
+
+    const box = document.querySelector(`.locality-box[data-locality="${name}"]`);
+    if (!box) return;
+
+    box.querySelector('.locality-name').style.display = 'none';
+    box.querySelector('.edit-input').style.display = 'inline';
+    box.querySelector('button[onclick^="saveLocality"]').style.display = 'inline';
+  }
+
+  async function saveLocality(oldName) {
+    const box = document.querySelector(`.locality-box[data-locality="${oldName}"]`);
+    const input = box.querySelector('.edit-input');
+    const newName = input.value.trim();
+    const state = document.getElementById('stateSelect').value;
+
+    if (!newName) return alert('Locality name cannot be empty');
+
+    if (newName === oldName) {
+      alert("⚠️ No changes detected.");
+      fetchLocalities();
+      return;
+    }
+
+    try {
+      const res = await fetch(`/localities/update`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, oldLocality: oldName, newLocality: newName })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert('✅ Locality updated');
+        fetchLocalities();
+      } else {
+        alert('❌ ' + (result.message || 'Update failed'));
+      }
+    } catch (err) {
+      console.error('Error updating locality:', err);
+      alert("Something went wrong.");
+    }
+  }
+
+  async function deleteLocality(name) {
+    const state = document.getElementById('stateSelect').value;
+    if (!state || !name) return;
+
+    if (!confirm("Are you sure you want to delete this locality?")) return;
+
+    try {
+      const res = await fetch(`/localities/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, locality: name })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert('✅ Locality deleted');
+        fetchLocalities();
+      } else {
+        alert('❌ ' + (result.message || 'Failed to delete'));
+      }
+    } catch (err) {
+      console.error('Error deleting locality:', err);
+      alert("Something went wrong.");
+    }
+  }
+
+  async function addLocality() {
+    const state = document.getElementById('stateSelect').value;
+    const locality = document.getElementById('newLocality').value.trim();
+
+    if (!state || !locality) {
+      alert('Please select a state and enter a locality.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/localities/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state, locality })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert("✅ Locality added successfully!");
+        document.getElementById('newLocality').value = '';
+        fetchLocalities();
+      } else {
+        alert("❌ " + (result.message || "Add failed"));
+      }
+    } catch (err) {
+      console.error('Error adding locality:', err);
+      alert("Something went wrong.");
+    }
+  }
+
+  window.onload = loadStates;
+</script>
+
+</body>
+</html>

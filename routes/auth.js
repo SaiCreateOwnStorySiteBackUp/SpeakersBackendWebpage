@@ -55,10 +55,13 @@ router.post('/login', async (req, res) => {
     }
 
     res.status(200).json({
-      email: user.email,
-      role: user.role,
-      allowedPage: user.allowedPage,
-      name: user.name
+      success: true,
+      user: {
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        allowedPage: user.allowedPage
+      }
     });
 
   } catch (err) {

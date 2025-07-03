@@ -44,6 +44,20 @@ input[type="text"], input[type="file"] {
   height: 150px;
   background: #fff;
 }
+.btn-row         { display:flex; gap:12px; margin-top:8px; }
+/* .post-btn        { background:#007bff; } */
+/* .draft-btn       { background:#6c757d; color:#fff; } */
+/* .btn-row button:hover { opacity:.9; } */
+
+.draft-btn {
+ background: #007BFF;
+color: #fff;
+padding: 12px 25px;
+border: none;
+cursor: pointer;
+font-size: 16px;
+border-radius: 4px;
+}
 
 .post-btn {
   background: #007BFF;
@@ -55,9 +69,13 @@ input[type="text"], input[type="file"] {
   border-radius: 4px;
 }
 
-.post-btn:hover {
+/* .post-btn:hover {
   background: #0056b3;
-}
+} */
+.btn-row button:hover {
+  background: #0056b3;
+   opacity:.9;
+ }
 
 .image-options {
   display: flex;
@@ -92,3 +110,27 @@ input[type="text"], input[type="file"] {
 .tooltip-menu button:hover {
   background-color: #ddd;
 }
+.editor {
+    min-height: 120px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #fff;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  /* select, input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 8px;
+    font-size: 16px;
+    margin-top: 4px;
+  }
+
+  label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 6px;
+  } */

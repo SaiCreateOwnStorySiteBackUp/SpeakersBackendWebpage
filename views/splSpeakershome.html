@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Seshu Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/cssStyles/splSpeakershome.css">
+</head>
+<body>
+  <div class="container">
+    <h1 id="welcomeMsg">Welcome</h1>
+    <p>You have special access to manage stories and regional content.</p>
+
+    <div class="button-group">
+      <button onclick="location.href='splSpeakersCreateButton.html'">Create Story</button>
+      <button onclick="location.href='splSpeakersEditButton.html'">Edit Story</button>
+      <button onclick="location.href='splAddStates.html'">Add States</button>
+      <button onclick="location.href='splAddLocality.html'">Add Locality</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const rawName = localStorage.getItem("name");
+    console.log("Retrieved name from localStorage:", rawName);
+
+    const name = rawName ? rawName.trim() : null;
+
+    if (name) {
+      const formattedName = name.charAt(0).toUpperCase() + name.slice(1);
+      document.getElementById("welcomeMsg").textContent = `Welcome, ${formattedName}`;
+    } else {
+      document.getElementById("welcomeMsg").textContent = "Welcome, Speaker";
+    }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+  </script>
+</body>
+</html>

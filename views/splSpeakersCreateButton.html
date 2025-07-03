@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Seshu Dashboard - Create Story</title>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/cssStyles/speakerDashboardCreateButton.css">
+</head>
+<body>
+  <header>
+    <h1>Welcome, Seshu</h1>
+  </header>
+
+  <div class="container">
+    <h2>Create New Story</h2>
+
+    <form id="storyForm" enctype="multipart/form-data">
+      <div class="form-group">
+        <label>Story Image</label>
+        <input type="file" id="imageFile" name="imageFile" />
+        <input type="text" id="imageUrl" placeholder="Or paste image URL..." />
+      </div>
+
+      <div class="form-group">
+        <label>Story Title</label>
+        <div id="titleEditor" class="editor"></div>
+      </div>
+
+      <div class="form-group">
+        <label>Description (Optional)</label>
+        <div id="descriptionEditor" class="editor"></div>
+      </div>
+
+      <div class="form-group">
+        <label>YouTube Link (Optional)</label>
+        <input type="text" id="youtubeBox" placeholder="https://youtube.com/..." />
+      </div>
+
+      <div class="form-group">
+        <label>State</label>
+        <select id="stateSelect" required onchange="loadLocalities()">
+          <option value="">Select State</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Locality</label>
+        <select id="localitySelect" required>
+          <option value="">Select Locality</option>
+        </select>
+      </div>
+
+      <button type="submit" class="post-btn">Post Story</button>
+    </form>
+  </div>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+  <script>
+    const email = localStorage.getItem("email"); // Can be pulled from localStorage if needed
+
+    if (!email) {
+    alert("Not logged in. Redirecting...");
+    window.location.href = "login.html";
+  }
+    const titleEditor = new Quill('#titleEditor', {
+      theme: 'snow',
+      placeholder: 'Story Title...',
+      modules: { toolbar: [['bold', 'italic'], [{ 'header': 1 }, { 'header': 2 }], ['link']] }
+    });
+
+    const descriptionEditor = new Quill('#descriptionEditor', {
+      theme: 'snow',
+      placeholder: 'Write story details...',
+      modules: { toolbar: [['bold', 'italic'], ['link'], ['clean']] }
+    });
+
+    // Load states
+    async function loadStates() {
+      try {
+        const res = await fetch('/states');
+        const data = await res.json();
+        const select = document.getElementById('stateSelect');
+        select.innerHTML = `<option value="">Select State</option>`;
+        if (data.success && Array.isArray(data.states)) {
+          data.states.forEach(state => {
+            const opt = document.createElement('option');
+            opt.value = state.state;
+            opt.textContent = state.state;
+            select.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load states:', err);
+      }
+    }
+
+    // Load localities for selected state
+    async function loadLocalities() {
+      const state = document.getElementById('stateSelect').value;
+      const localitySelect = document.getElementById('localitySelect');
+      localitySelect.innerHTML = '<option value="">Select Locality</option>';
+      if (!state) return;
+
+      try {
+        const res = await fetch(`/localities/${encodeURIComponent(state)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.localities)) {
+          data.localities.forEach(loc => {
+            const opt = document.createElement('option');
+            opt.value = loc;
+            opt.textContent = loc;
+            localitySelect.appendChild(opt);
+          });
+        }
+      } catch (err) {
+        console.error('Error loading localities:', err);
+      }
+    }
+
+    // Submit handler
+    document.getElementById("storyForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  // const title = titleEditor.root.innerHTML.trim();
+  const titleText = titleEditor.getText().trim();
+const titleHtml = titleEditor.root.innerHTML.trim();
+  const description = descriptionEditor.root.innerHTML.trim();
+  const youtubeLink = document.getElementById("youtubeBox").value.trim();
+  const imageFile = document.getElementById("imageFile").files[0];
+  const imageUrl = document.getElementById("imageUrl").value.trim();
+  const state = document.getElementById("stateSelect").value;
+  const locality = document.getElementById("localitySelect").value;
+
+  if (!titleText) {
+  alert("❗ Please enter a Story Title.");
+  document.getElementById("titleEditor").scrollIntoView({ behavior: "smooth", block: "center" });
+  titleEditor.focus();
+  return;
+}
+
+if (!state) {
+  alert("❗ Please select a State.");
+  document.getElementById("stateSelect").scrollIntoView({ behavior: "smooth", block: "center" });
+  return;
+}
+
+if (!locality) {
+  alert("❗ Please select a Locality.");
+  document.getElementById("localitySelect").scrollIntoView({ behavior: "smooth", block: "center" });
+  return;
+}
+
+
+
+  // 🛑 Ensure only one media type is used
+  const hasImage = imageFile || imageUrl;
+  const hasYoutube = !!youtubeLink;
+
+  if (!hasImage && !hasYoutube) {
+    alert("Please provide either an image or a YouTube link.");
+    return;
+  }
+
+  if (hasImage && hasYoutube) {
+    alert("Please provide only one: either an image or a YouTube link.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("email", email);
+  // formData.append("title", titleHtml);
+  formData.append("title", titleText);
+  formData.append("description", description);
+  formData.append("youtubeLink", youtubeLink);
+  formData.append("state", state);
+  formData.append("locality", locality);
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  } else if (imageUrl) {
+    formData.append("imageUrl", imageUrl);
+  }
+
+  try {
+    const response = await fetch("/splStory/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      alert("✅ Story uploaded successfully!");
+      window.location.href = "splSpeakershome.html"; // Optional redirect
+    }else if (result.message.includes('already been posted')) {
+      alert("🚫 This story URL has already been posted.");
+    }
+     // else if (result.message && result.message.includes("already used in old stories")) {
+    //   alert("🚫 Please change title, already used in old stories.");
+    //   document.getElementById("titleEditor").scrollIntoView({ behavior: "smooth", block: "center" });
+    //   titleEditor.focus();
+    // }
+    else if (result.message === "Already Title name is used in previous stories, Please update new title name.") {
+      alert("🚫 " + result.message);
+      document.getElementById("titleEditor").scrollIntoView({ behavior: "smooth", block: "center" });
+      titleEditor.focus();
+    }
+     else {
+      alert("❌ Upload failed: " + result.message);
+    }
+  } catch (err) {
+    console.error("Error uploading:", err);
+    alert("Something went wrong.");
+  }
+});
+    window.onload = loadStates;
+  </script>
+</body>
+</html>

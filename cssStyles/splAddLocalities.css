@@ -1,0 +1,266 @@
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f2f2f2;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: auto;
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  select, input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .add-section {
+    display: flex;
+    gap: 10px;
+  }
+
+  .add-section button {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .add-section button:hover {
+    background-color: #218838;
+  }
+
+  .locality-list {
+    margin-top: 20px;
+    padding-left: 0;
+  }
+
+  .locality-list li {
+    list-style: none;
+    background: #e0e0e0;
+    margin: 5px 0;
+    padding: 10px;
+    border-radius: 6px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .back-btn {
+    display: block;
+    margin-top: 25px;
+    text-align: center;
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+/* .locality-box {
+  background: #f2f2f2;
+  padding: 10px;
+  border-radius: 5px;
+} */
+
+
+
+/* .pagination {
+  margin-top: 20px;
+  text-align: center;
+} */
+
+/* .pagination button {
+  margin: 2px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.pagination .active {
+  font-weight: bold;
+  background-color: #007bff;
+  color: white;
+} */
+
+/* .pagination {
+  margin-top: 20px;
+  text-align: center;
+} */
+
+/* .pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+} */
+
+
+/* .locality-box {
+  width: calc(50% - 10px);
+  background-color: #f2f2f2;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 0 3px rgba(0,0,0,0.1);
+} */
+
+/* *********************************************** */
+/* #localityGrid {
+display: flex;
+justify-content: space-between;
+gap: 20px;
+margin-top: 20px;
+}
+
+.column {
+flex: 1;
+display: flex;
+flex-direction: column;
+gap: 15px;
+}
+.locality-box button {
+margin-left: 5px;
+}
+
+.locality-box {
+  width: 80%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  list-style-type: none;
+}
+
+.locality-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.grid-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.locality-box input.edit-input {
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.pagination {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  margin: 0 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background-color: #007BFF;
+  color: white;
+  font-weight: bold;
+} */
+
+/* ─────────────────────  GRID WRAPPER  ───────────────────── */
+#localityGrid {
+  display: flex;               /* two vertical columns */
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.column {
+  flex: 1 1 0;                 /* 50 % width columns */
+  display: flex;
+  flex-direction: column;
+  gap: 18px;                   /* vertical gap between rows */
+}
+
+/* ─────────────────────  LOCALITY BOX  ───────────────────── */
+.locality-box {
+  display: flex;               /* one row: name/input  +  icons */
+  align-items: center;
+  background: #f6f6f6;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 42px;
+}
+
+/* 1a. normal text label */
+.locality-name {
+  flex: 1 1 auto;              /* eat up leftover width */
+  word-break: break-word;      /* wrap long names if needed */
+  padding-right: 8px;
+}
+
+/* 1b. edit text‑box (only visible in edit mode) */
+.edit-input {
+  flex: 1 1 auto;              /* same width behaviour as label */
+  padding: 6px 8px;
+  font-size: 15px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* ─────────────────────  ICON BUTTONS  ───────────────────── */
+.locality-box button {
+  flex: 0 0 32px;              /* fixed width so they line up */
+  height: 32px;
+  margin-left: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;             /* emoji size */
+  line-height: 32px;
+}
+
+.locality-box button:hover {
+  background: #e2e2e2;
+  border-radius: 4px;
+}
+
+/* ─────────────────────  PAGINATION  ───────────────────── */
+.pagination {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.pagination button {
+  margin: 0 3px;
+  padding: 6px 12px;
+  border: 1px solid #aaa;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pagination button.active {
+  background: #007bff;
+  color: #fff;
+  font-weight: 600;
+}

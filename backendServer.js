@@ -79,6 +79,18 @@ app.use('/api/visitor', require('./routes/visitors'));
 const contactRoutes = require('./routes/contact');
 app.use('/api', contactRoutes);
 
+// States and Localities
+// const stateRoutes = require('./routes/states');
+// app.use('/states', stateRoutes);
+app.use('/states', require('./routes/states'));        // GET /states, POST /states
+app.use('/localities', require('./routes/localities'));// GET /localities/:state, POST /localities/add
+
+const splStoryRoutes = require('./routes/splStory'); // ✅ import
+app.use('/splStory', splStoryRoutes);
+
+const splUploadRoutes = require('./routes/splUpload');
+app.use('/splUpload', splUploadRoutes);
+
 // *******************************************************************
 // Page Routes for admin and login pages
 app.get('/login', (req, res) => {
@@ -101,7 +113,10 @@ app.get('/admin/update-speaker', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'updateSpeaker.html'));
 });
 
+
+
 // Additional admin API example (you have a User model somewhere)
+
 const User = require('./models/user');
 app.get('/admin/speakers', async (req, res) => {
   try {

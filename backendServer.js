@@ -67,6 +67,9 @@ app.use('/stories', require('./routes/stories'));
 const storiesRoute = require("./routes/stories");
 app.use("/api/stories", storiesRoute);;
 
+const publicSubs = require("./routes/publicSubmissions");
+app.use("/public-submissions", publicSubs);
+
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 const adminRoutes = require("./routes/admin");

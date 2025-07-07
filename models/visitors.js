@@ -2,8 +2,10 @@ const mongoose = require('mongoose');
 
 const visitorSchema = new mongoose.Schema({
   ip: { type: String, index: true },
-  latitude: Number,
-  longitude: Number,
+  /* round every value to 8 dp on the way IN
++      (stored as JavaScript Number ≈ MongoDB double) */
+   latitude  : { type:Number, set:v => v == null ? v : +(+v).toFixed(8) },
+   longitude : { type:Number, set:v => v == null ? v : +(+v).toFixed(8) },
   visitCount: { type: Number, default: 0 },
   clicks: {
     type: Map,

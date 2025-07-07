@@ -94,6 +94,13 @@ app.use('/splStory', splStoryRoutes);
 const splUploadRoutes = require('./routes/splUpload');
 app.use('/splUpload', splUploadRoutes);
 
+const cloudinarySignRoute = require('./routes/cloudinarySign');
+app.use('/cloudinary', cloudinarySignRoute);
+
+const pubCldRoute = require('./routes/cloudinaryPublic');
+app.use('/cloudinary', pubCldRoute);   //  /cloudinary/public-signature
+
+
 // *******************************************************************
 // Page Routes for admin and login pages
 app.get('/login', (req, res) => {

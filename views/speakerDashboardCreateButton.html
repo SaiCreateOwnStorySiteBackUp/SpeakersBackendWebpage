@@ -26,8 +26,10 @@
       <label for="imageFile">Story Image</label>
       <div class="image-options">
         <input type="file" id="imageFile" name="imageFile" accept="image/*" />
+        <button type="button" id="uploadImageBtn" disabled>Upload</button>
         <input type="text" id="imageUrl" name="imageUrl" placeholder="Or paste image URL..." />
       </div>
+      <small id="uploadStatus" style="display:none;"></small>
     </div>
 
     <!-- ---------- EDITORS ---------- -->
@@ -64,6 +66,12 @@
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 
 <script>
+/*********************************************
+ * 0.  CONSTANTS & USER INFO
+ *********************************************/
+const CLOUDINARY_CLOUD_NAME   = "createownstory";           //  <——— your Cloudinary cloud name
+const CLOUDINARY_UPLOAD_PRESET = "speakers_story_upload";   //  <——— unsigned upload preset mapped to SpeakersStories_Images folder
+
 /* ------------------------------------------------------------------
    0.  USER INFO  (unchanged)
 ------------------------------------------------------------------ */
@@ -151,9 +159,82 @@ const descriptionEditor = new Quill('#descriptionEditor',{
   modules:{ toolbar:commonToolbar, customImage:true }
 });
 
-/* ------------------------------------------------------------------
-   3.  UNIVERSAL SUBMITTER
------------------------------------------------------------------- */
+/*********************************************
+ * 3.  CLOUDINARY  –  COVER IMAGE UPLOAD
+ *********************************************/
+ /* -------------------------------------------------------------
+    3.  CLOUDINARY  –  COVER IMAGE UPLOAD (button‑driven)
+ ------------------------------------------------------------- */
+ async function getCloudinarySignature() {
+  const res = await fetch('/cloudinary/signature');
+  return await res.json();
+}
+async function uploadFileToCloudinary(file) {
+ const sig = await getCloudinarySignature();
+ const formData = new FormData();
+ formData.append('file', file);
+ formData.append('api_key', sig.apiKey);
+ formData.append('timestamp', sig.timestamp);
+ formData.append('signature', sig.signature);
+ formData.append('upload_preset', sig.uploadPreset);
+ formData.append('folder', sig.folder);
+
+ const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
+   method: 'POST',
+   body: formData
+ });
+ return await res.json(); // Contains secure_url
+}
+
+ const imageFileInput  = document.getElementById('imageFile');
+ const imageUrlInput   = document.getElementById('imageUrl');
+ const uploadBtn       = document.getElementById('uploadImageBtn');
+ const uploadStatusEl  = document.getElementById('uploadStatus');
+
+ /* Enable the Upload button only when a file is chosen */
+ imageFileInput.addEventListener('change', () => {
+   uploadBtn.disabled = !imageFileInput.files.length;
+ });
+
+ /* Handle the actual upload on click */
+ uploadBtn.addEventListener('click', async () => {
+  const file = imageFileInput.files[0];
+  if (!file) return;
+
+  uploadBtn.disabled = true;
+  uploadStatusEl.textContent = 'Uploading...';
+  uploadStatusEl.style.display = 'inline';
+  publishBtn.disabled = draftBtn.disabled = true;
+
+  try {
+    const data = await uploadFileToCloudinary(file);
+    if (data.secure_url) {
+      // imageUrlInput.value = data.secure_url;
+      /* ── NEW: ask Cloudinary to serve a browser‑friendly JPG/WEBP ── */
+      const transformed = data.secure_url
+                            .replace('/upload/', '/upload/f_auto,q_auto/')
+                            .replace(/\.(heic|heif|webp|png)$/i, '.jpg');
+
+      imageUrlInput.value = transformed;               // save safe URL
+      imageFileInput.value = '';
+      uploadStatusEl.textContent = 'Uploaded ✔';
+    } else {
+      throw new Error('No secure_url received from Cloudinary.');
+    }
+  } catch (err) {
+    console.error('Upload failed:', err);
+    alert('Upload failed. Please try again.');
+    uploadStatusEl.style.display = 'none';
+  } finally {
+    publishBtn.disabled = draftBtn.disabled = false;
+  }
+});
+
+
+
+/*********************************************
+ * 4.  UNIVERSAL SUBMITTER
+ *********************************************/
 function submitStory(statusFlag) {                 // 'draft' | 'published'
   // --- collect data once ---
   const titlePlain = titleEditor.getText().trim();
@@ -162,32 +243,29 @@ function submitStory(statusFlag) {                 // 'draft' | 'published'
   const description= descriptionEditor.root.innerHTML.trim();
   const youtubeLink= document.getElementById("youtubeBox").value.trim();
   const imageFile  = document.getElementById("imageFile").files[0];
-  const imageUrl   = document.getElementById("imageUrl").value.trim();
+  const imageUrl   = imageUrlInput.value.trim();   // after Cloudinary upload
 
   // --- validation ---
-  if (!titlePlain) {
-    alert("❗ Please enter a Story Title.");
-    return;
-  }
+  if (!titlePlain) { alert("❗ Please enter a Story Title."); return; }
 
   if (statusFlag === "published") {
-    if (!intro || !description) {
-      alert("Please complete Intro and Description before publishing.");
+    if (!intro || !description) { alert("Please complete Intro and Description before publishing."); return; }
+
+    const hasImageFile = !!imageFile;
+    const hasImageUrl  = !!imageUrl;
+    const hasYouTube   = !!youtubeLink;
+    const totalProvided = [hasImageFile, hasImageUrl, hasYouTube].filter(Boolean).length;
+    if (totalProvided === 0) {
+      alert("Please provide an image (upload or URL) OR a YouTube link before publishing.");
       return;
     }
-    const hasImage   = imageFile || imageUrl;
-    const hasYouTube = !!youtubeLink;
-    if (!hasImage && !hasYouTube) {
-      alert("Please provide an image OR a YouTube link before publishing.");
-      return;
-    }
-    if (hasImage && hasYouTube) {
-      alert("Please choose either an image OR a YouTube link, not both.");
+    if (totalProvided > 1) {
+      alert("Please choose only one: image upload, image URL, OR YouTube link.");
       return;
     }
   }
 
-  // --- build FormData ---
+  // --- build FormData for backend ---
   const fd = new FormData();
   fd.append("email", email);
   fd.append("status", statusFlag);
@@ -195,8 +273,7 @@ function submitStory(statusFlag) {                 // 'draft' | 'published'
   fd.append("intro", intro);
   fd.append("description", description);
   fd.append("youtubeLink", youtubeLink);
-  if (imageFile)     fd.append("image",    imageFile);
-  else if (imageUrl) fd.append("imageUrl", imageUrl);
+  if (imageUrl) fd.append("imageUrl", imageUrl);   // ONLY URL — no raw file
 
   // --- send ---
   fetch("/upload/uploadStory", { method:"POST", body:fd })
@@ -205,7 +282,7 @@ function submitStory(statusFlag) {                 // 'draft' | 'published'
       if (res.success) {
         alert(statusFlag === "draft" ? "💾 Draft saved!" : "✅ Story published!");
         clearFormFields();
-        if (statusFlag === "published") window.location.href = "splSpeakershome.html";
+        if (statusFlag === "published") window.location.href = "speakershome.html";
       } else {
         alert("❌ " + (res.message || "Failed to save."));
       }
@@ -216,22 +293,23 @@ function submitStory(statusFlag) {                 // 'draft' | 'published'
     });
 }
 
-/* ------------------------------------------------------------------
-   4.  BUTTON HOOKS
------------------------------------------------------------------- */
+/*********************************************
+ * 5.  BUTTON HOOKS
+ *********************************************/
 document.getElementById("publishBtn").onclick = () => submitStory("published");
 document.getElementById("draftBtn")  .onclick = () => submitStory("draft");
 
-/* ------------------------------------------------------------------
-   5.  CLEAR FORM  (kept exactly as before)
------------------------------------------------------------------- */
+/*********************************************
+ * 6.  CLEAR FORM FIELDS
+ *********************************************/
 function clearFormFields() {
   titleEditor.setContents([]);
   introEditor.setContents([]);
   descriptionEditor.setContents([]);
   document.getElementById("youtubeBox").value = "";
-  document.getElementById("imageFile").value = "";
-  document.getElementById("imageUrl").value = "";
+  imageFileInput.value = "";
+  imageUrlInput.value  = "";
+  uploadStatusEl.style.display = 'none';
 }
 </script>
 </body>

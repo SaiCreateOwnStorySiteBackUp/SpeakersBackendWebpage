@@ -14,19 +14,34 @@ const extractClientIp = (req) => {
 router.post('/track', async (req, res) => {
   try {
     const ip = extractClientIp(req);
-    const geo = geoip.lookup(ip) || {};
+    // const geo = geoip.lookup(ip) || {};
+    /* 1️⃣  Prefer client‑supplied coords (already 8 dp) … */
+        let { lat, lon } = req.body || {};
 
+        /* 2️⃣  …fall back to Geo‑IP if absent                         */
+        if (lat == null || lon == null){
+          const geo = geoip.lookup(ip) || {};
+          lat = geo.ll?.[0] ?? null;
+          lon = geo.ll?.[1] ?? null;
+        }
     const visitor = await Visitor.findOne({ ip });
 
     if (visitor) {
       visitor.visitCount++;
       visitor.lastVisited = new Date();
+      /* update coords if we learned something more precise */
+      if (lat != null && lon != null) {
+        visitor.latitude  = lat;
+        visitor.longitude = lon;
+      }
       await visitor.save();
     } else {
       await Visitor.create({
         ip,
-        latitude: geo.ll?.[0] || null,
-        longitude: geo.ll?.[1] || null,
+        // latitude: geo.ll?.[0] || null,
+        // longitude: geo.ll?.[1] || null,
+        latitude : lat,
+        longitude: lon,
         visitCount: 1, // ✅ IMPORTANT: Explicitly set to 1 when first created
         lastVisited: new Date(),
         clicks: {}     // ✅ Optional: Make sure default `clicks` map is initialized

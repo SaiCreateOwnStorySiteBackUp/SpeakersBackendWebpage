@@ -121,6 +121,10 @@ border-radius: 4px;
   .form-group {
     margin-bottom: 20px;
   }
+  .current-image {
+  max-width: 100%;
+  overflow: hidden;
+}
 
   /* select, input[type="text"], input[type="file"] {
     width: 100%;

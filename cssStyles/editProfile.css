@@ -1,0 +1,98 @@
+body {
+  font-family: Arial;
+  margin: 30px;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+  }
+
+label {
+  font-weight: bold;
+}
+
+img {
+  border-radius: 50%;
+  margin-top: 10px;
+}
+
+textarea {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 10px 20px;
+  font-weight: bold;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Cropper Modal Styling */
+#cropperModal {
+  display: none;
+  margin-top: 20px;
+  max-width: 100%;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background-color: #f9f9f9;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#cropperImage {
+  width: 100%;
+  max-width: 260px;
+  max-height: 360px;
+  display: block;
+  margin: auto;
+  border-radius: 12px;
+}
+
+#cropperPreview {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+/* #livePreview {
+  border-radius: 50%;
+  border: 1px solid #ccc;
+} */
+#livePreview {
+width: 260px;
+height: 360px;
+border-radius: 12px; /* ← Instead of 50% (which makes it circular) */
+border: 1px solid #ccc;
+}
+
+@media (max-width: 768px) {
+  #cropperImage {
+    max-width: 90vw;
+  }
+  button {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  #cropperModal {
+    padding: 10px;
+  }
+  #cropperImage {
+    max-width: 100%;
+  }
+}

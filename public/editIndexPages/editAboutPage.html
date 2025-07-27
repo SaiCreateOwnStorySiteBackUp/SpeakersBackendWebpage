@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit About Page</title>
+  <link rel="stylesheet" href="../../cssStyles/editIndexPages.css" />
+  <style>
+
+  </style>
+</head>
+<body>
+  <div class="sticky-dashboard-btn">
+    <button onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">⬅ Dashboard</button>
+  </div>
+
+  <div class="dashboard-container">
+    <h1>Edit About Page</h1>
+
+    <!-- Logo preview and shape radio options -->
+    <div>
+      <label>Preview Logo:</label><br>
+      <img id="aboutLogoPreview" alt="Logo" style="display:none;" />
+    </div>
+
+    <div class="radio-group">
+      <label><input type="radio" name="logoShape" id="defaultShape" value="default" checked> Default</label>
+      <label><input type="radio" name="logoShape" id="circleShape" value="circle"> Circle</label>
+    </div>
+
+    <div>
+      <label>About Page Text:</label><br>
+      <textarea id="aboutText" rows="6" cols="60" placeholder="Enter About Page Content"></textarea>
+    </div>
+
+    <!-- Update & Cancel Buttons -->
+    <div class="button-group">
+      <button onclick="updateAboutPage()">Update About Page</button>
+      <button onclick="window.location.href='../../admin/adminDashboardUi.html'">Cancel</button>
+    </div>
+  </div>
+
+  <!-- <script>
+    let currentLogoUrl = '';
+    let currentAboutText = '';
+    let currentLogoShape = 'default';
+
+    // Load existing data on page load
+    window.onload = async () => {
+      try {
+        const res = await fetch('/editIndexPages/about');
+        const data = await res.json();
+
+        if (data.success) {
+          const { logoUrl, aboutText, logoShape } = data.page || {};
+
+          if (logoUrl) {
+            document.getElementById("aboutLogoPreview").src = logoUrl;
+            currentLogoUrl = logoUrl;
+          }
+
+          if (aboutText) {
+            document.getElementById("aboutText").value = aboutText;
+            currentAboutText = aboutText;
+          }
+
+          if (logoShape === "circle") {
+            document.getElementById("aboutLogoPreview").classList.add("circle-shape");
+            document.querySelector('input[value="circle"]').checked = true;
+            currentLogoShape = 'circle';
+          } else {
+            document.querySelector('input[value="default"]').checked = true;
+          }
+        }
+      } catch (err) {
+        console.error("Error loading about data:", err);
+        alert("Failed to load About Page data.");
+      }
+    };
+
+    // Change logo shape live on radio select
+    document.addEventListener("change", (e) => {
+      if (e.target.name === "logoShape") {
+        const logo = document.getElementById("aboutLogoPreview");
+        if (e.target.value === "circle") {
+          logo.classList.add("circle-shape");
+        } else {
+          logo.classList.remove("circle-shape");
+        }
+      }
+    });
+
+    // Update function
+    async function updateAboutPage() {
+      const aboutText = document.getElementById("aboutText").value.trim();
+      const selectedShape = document.querySelector('input[name="logoShape"]:checked').value;
+
+      if (!aboutText) return alert("About Page Text is required.");
+
+      const changes = [];
+      if (aboutText !== currentAboutText) changes.push("About Text");
+      if (selectedShape !== currentLogoShape) changes.push("Logo Shape");
+
+      if (changes.length === 0) {
+        return alert("No changes detected.");
+      }
+
+      try {
+        const res = await fetch("/editIndexPages/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            page: "about",
+            content: {
+              aboutText,
+              logoUrl: currentLogoUrl,
+              logoShape: selectedShape
+            }
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.message === "Page updated successfully") {
+          alert(`${changes.join(" and ")} updated successfully.`);
+          window.location.href = "/admin/adminDashboardUi.html";
+        } else {
+          alert("Update failed.");
+        }
+      } catch (err) {
+        console.error("Update error:", err);
+        alert("Error updating About Page.");
+      }
+    }
+  </script> -->
+  <script>
+    let currentLogoUrl = '';
+    let currentLogoShape = 'default';
+    let originalAboutText = '';
+
+    async function loadAboutPageData() {
+      try {
+        const res = await fetch("/editIndexPages/about");
+        if (!res.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await res.json();
+
+        // ✅ Set logo if exists
+        if (data.logoUrl) {
+          currentLogoUrl = data.logoUrl;
+          const img = document.getElementById("aboutLogoPreview");
+          img.src = data.logoUrl;
+          img.style.display = 'block';  // Show after setting src
+        } else {
+          document.getElementById("aboutLogoPreview").src = "/images/default.jpg";
+          document.getElementById("aboutLogoPreview").style.display = 'block';
+        }
+
+        // ✅ Update about text
+        if (data.aboutText) {
+          document.getElementById("aboutText").value = data.aboutText;
+          originalAboutText = data.aboutText.trim();
+        }
+        // ✅ Set logo shape radio
+    const shape = data.logoShape || "default";
+    document.getElementById("aboutLogoPreview").classList.remove("circle-logo");
+    if (shape === "circle") {
+      document.getElementById("circleShape").checked = true;
+      document.getElementById("aboutLogoPreview").classList.add("circle-logo");
+    } else {
+      document.getElementById("defaultShape").checked = true;
+    }
+
+    currentLogoShape = shape;
+
+  } catch (err) {
+    console.error("Failed to load about page data", err);
+    alert("Failed to load data");
+  }
+        // ✅ Set shape if exists
+        // if (data.logoShape === 'circle') {
+        //   document.getElementById("circleShape").checked = true;
+        //   document.getElementById("aboutLogoPreview").classList.add("circle-logo");
+        //   currentLogoShape = 'circle';
+        // } else {
+        //   document.getElementById("defaultShape").checked = true;
+        //   document.getElementById("aboutLogoPreview").classList.remove("circle-logo");
+        //   currentLogoShape = 'default';
+        // }
+
+        // ✅ Set about text
+        // if (data.aboutText) {
+        //   document.getElementById("aboutText").value = data.aboutText;
+        //   originalAboutText = data.aboutText.trim();
+        // }
+    //   } catch (err) {
+    //     console.error("Failed to load about page data", err);
+    //     alert("Failed to load data.");
+    //   }
+    }
+
+    // Change logo shape dynamically
+    document.addEventListener("change", function (e) {
+      if (e.target.name === "logoShape") {
+        const shape = e.target.value;
+        const logo = document.getElementById("aboutLogoPreview");
+        if (shape === "circle") {
+          logo.classList.add("circle-logo");
+        } else {
+          logo.classList.remove("circle-logo");
+        }
+      }
+    });
+
+    async function updateAboutPage() {
+      const aboutText = document.getElementById("aboutText").value.trim();
+      const logoShape = document.querySelector('input[name="logoShape"]:checked').value;
+
+      if (!aboutText) {
+        return alert("About text is required.");
+      }
+
+      const isTextChanged = aboutText !== originalAboutText;
+      const isShapeChanged = logoShape !== currentLogoShape;
+
+      if (!isTextChanged && !isShapeChanged) {
+        return alert("No changes detected.");
+      }
+
+      const content = {
+        aboutText,
+        logoUrl: currentLogoUrl,  // Reuse existing logo
+        logoShape
+      };
+
+      try {
+        const res = await fetch("/editIndexPages/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page: "about", content })
+        });
+
+        const data = await res.json();
+
+        if (data.message === "Page updated successfully") {
+          let msg = "Updated:";
+          if (isTextChanged) msg += " About Text";
+          if (isShapeChanged) msg += (isTextChanged ? ", Logo Shape" : " Logo Shape");
+
+          alert(msg);
+          window.location.href = "/admin/adminDashboardUi.html";
+        } else {
+          alert("Update failed.");
+        }
+      } catch (err) {
+        console.error("Update failed", err);
+        alert("Server error.");
+      }
+    }
+
+    window.onload = loadAboutPageData;
+  </script>
+
+</body>
+</html>

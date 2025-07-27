@@ -6,11 +6,16 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 app.use(cors());
+// app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 
 // Safer way to connect using .env
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
+
+
+  const metaRoutes = require('./routes/meta');
+  app.use('/', metaRoutes); // should expose `/meta/:slug
 
 // Middleware
 app.use(express.json());
@@ -34,6 +39,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
+
+
 // ---------- API Routes (read-only APIs) ----------
 // Import routes
 // const authRoute = require('./routes/auth');
@@ -53,6 +60,11 @@ app.use('/api/auth', require('./routes/auth'));
 
 // User Routes
 app.use('/users', require('./routes/users'));
+const editIndexPagesRoutes = require('./routes/editIndexPages');
+app.use('/editIndexPages', editIndexPagesRoutes);
+
+const headerRoutes = require("./routes/header");
+app.use("/header", headerRoutes);
 
 // Upload Route
 app.use('/upload', require('./routes/upload'));
@@ -138,6 +150,30 @@ app.get('/admin/speakers', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+app.get('/meta/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  try {
+    const user = await User.findOne({ name: { $regex: new RegExp(`^${slug}$`, 'i') } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const meta = {
+      title: `${user.name} - Free Voices Stories`,
+      description: user.intro || `Inspiring stories by ${user.name}`,
+      image: user.profileImage || `https://freevoices.onrender.com/images/default.jpg`,
+      url: `https://freevoices.onrender.com/${slug}.html`,
+    };
+
+    res.json(meta);
+  } catch (err) {
+    console.error("Meta fetch error:", err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 // Start backend server on different port
 const PORT = 5000;

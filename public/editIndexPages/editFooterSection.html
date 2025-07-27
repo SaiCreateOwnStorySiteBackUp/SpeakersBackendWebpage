@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Footer</title>
+  <link rel="stylesheet" href="../../cssStyles/footerSection.css" />
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/admin/adminDashboardUi.html">← Back to Dashboard</a>
+  </div>
+
+  <h2>Edit Footer Links</h2>
+
+  <div class="footer-actions">
+    <button onclick="addFooterField()">Add Footer Field</button>
+    <button onclick="toggleDeleteMode()">
+      <span id="deleteToggleText">Delete Footer Field</span>
+    </button>
+  </div>
+
+  <div id="footerContainer"></div>
+
+  <div class="footer-controls">
+    <button onclick="enableEditing()">Edit Footer Field</button>
+    <button onclick="updateAllFooterFields()">Update Footer Field</button>
+  </div>
+
+  <div class="copyright-section">
+  <label for="copyrightInput">© Copy Rights:</label>
+  <input type="text" id="copyrightInput" placeholder="Enter copyright text" disabled />
+  <button onclick="enableCopyrightEditing()">Edit</button>
+  <button onclick="updateCopyright()">Update Copy Rights Button</button>
+</div>
+
+
+
+  <script>
+  let deleteMode = false;
+  let originalFooterData = [];
+  let previousCopyrightValue = "";
+
+  function enableCopyrightEditing() {
+  const input = document.getElementById("copyrightInput");
+  previousCopyrightValue = input.value.trim(); // Store for change detection
+  input.disabled = false;
+  input.focus();
+}
+
+async function updateCopyright() {
+  const input = document.getElementById("copyrightInput");
+  const value = input.value.trim();
+
+    if (input.disabled) {
+      alert("Please click the Edit button first.");
+      return;
+    }
+
+    if (!value) {
+      alert("Please enter copyright text.");
+      return;
+    }
+
+    if (value === previousCopyrightValue) {
+      alert("No changes are applied.");
+      input.disabled = true;
+      return;
+    }
+
+    try {
+      await fetch("/editIndexPages/footer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "copyright", value, enabled: true }),
+      });
+      alert("Copyright text updated successfully.");
+      input.disabled = true;
+    } catch (err) {
+      console.error("Error updating copyright:", err);
+      alert("Failed to update copyright.");
+    }
+}
+
+  async function loadFooterData() {
+    try {
+      const response = await fetch('/editIndexPages/footer');
+      const data = await response.json();
+
+      const container = document.getElementById("footerContainer");
+      container.innerHTML = ""; // clear before re-adding
+
+      data.forEach(item => {
+      if (item.type === "copyright") {
+        const input = document.getElementById("copyrightInput");
+        if (input) input.value = item.value || "";
+      } else {
+        renderFooterField(item);
+        //createFooterRow(item.type, item.value, item.enabled);
+      }
+    });
+  } catch (err) {
+      console.error("Error loading footer data:", err);
+    }
+  }
+
+
+  function renderFooterField(item) {
+    const container = document.getElementById("footerContainer");
+
+    const div = document.createElement("div");
+    div.className = "footer-row";
+    div.dataset.type = item.type;
+
+    const label = document.createElement("label");
+    label.textContent = capitalize(item.type) + ":";
+// label
+// input enable="true" disable="false"
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = item.value;
+    input.dataset.type = item.type;
+    input.disabled = true;
+
+
+
+    const enable = document.createElement("input");
+    enable.type = "radio";
+    enable.name = `enable-${item.type}`;
+    enable.title = "Enable";
+    enable.value = "true";
+    enable.checked = item.enabled;
+    enable.disabled = true;   // ✅ Disable radio initially
+    enable.onchange = () => saveFooter(item.type, input.value, true);
+
+    const disable = document.createElement("input");
+    disable.type = "radio";
+    disable.name = `enable-${item.type}`;
+    disable.title = "Disable";
+    disable.value = "false";
+    disable.checked = !item.enabled;
+    disable.disabled = true;  // ✅ Disable radio initially
+    disable.onchange = () => saveFooter(item.type, input.value, false);
+
+    // const updateBtn = document.createElement("button");
+    // updateBtn.textContent = "Update";
+    // updateBtn.onclick = () => saveFooter(item.type, input.value, enable.checked);
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "delete-checkbox";
+    checkbox.style.display = deleteMode ? "inline-block" : "none";
+    checkbox.title = "Select to delete";
+
+    // div.append(checkbox, label, input, enable, disable, updateBtn);
+    div.append(checkbox, label, input, enable, disable);
+    container.appendChild(div);
+  }
+
+  function addFooterField() {
+    const typeRaw = prompt("Enter footer field name (e.g., YouTube, Facebook):");
+    if (!typeRaw) return;
+
+    const type = typeRaw.trim().toLowerCase();
+    if (!type) return;
+
+    // ✅ This check was wrongly placed earlier!
+    const exists = document.querySelector(`.footer-row[data-type="${type}"]`);
+    if (exists) {
+      alert("This footer type already exists.");
+      return;
+    }
+
+    const value = prompt(`Enter ${typeRaw} URL or address:`)?.trim();
+    if (!value) return;
+
+    renderFooterField({ type, value, enabled: true });
+    saveFooter(type, value, true);
+  }
+
+function enableEditing() {
+  document.querySelectorAll('#footerContainer input').forEach(input => {
+    input.disabled = false;
+  });
+
+  // Store the current values for comparison later
+  originalFooterData = Array.from(document.querySelectorAll('.footer-row')).map(row => {
+    const type = row.getAttribute('data-type');
+    const value = row.querySelector('input[type="text"]').value.trim();
+    const enabled = row.querySelector('input[type="radio"]:checked').value === "true";
+    return { type, value, enabled };
+  });
+}
+function disableEditing() {
+  document.querySelectorAll("#footerContainer input, #footerContainer button").forEach(el => {
+    el.disabled = true;
+  });
+}
+
+  function toggleDeleteMode() {
+    deleteMode = !deleteMode;
+    document.querySelectorAll(".delete-checkbox").forEach(cb => {
+      cb.style.display = deleteMode ? "inline-block" : "none";
+    });
+
+    document.getElementById("deleteToggleText").textContent = deleteMode ? "Confirm Delete" : "Delete Footer Field";
+
+    if (!deleteMode) return;
+
+    const selected = Array.from(document.querySelectorAll(".delete-checkbox:checked"));
+    if (selected.length === 0) return;
+
+    if (confirm(`Delete ${selected.length} footer field(s)?`)) {
+      selected.forEach(cb => {
+        const row = cb.closest(".footer-row");
+        const type = row.dataset.type;
+        deleteFooterField(type);
+        row.remove();
+      });
+      deleteMode = false;
+      document.getElementById("deleteToggleText").textContent = "Delete Footer Field";
+    }
+  }
+
+  async function saveFooter(type, value, enabled) {
+    try {
+      await fetch(`/editIndexPages/footer`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, value, enabled })
+      });
+      console.log("Saved", type);
+    } catch (err) {
+      console.error("Error saving footer:", err);
+    }
+  }
+
+  async function deleteFooterField(type) {
+    try {
+      await fetch(`/editIndexPages/footer/${type}`, {
+        method: "DELETE"
+      });
+      console.log("Deleted", type);
+    } catch (err) {
+      console.error("Error deleting footer:", err);
+    }
+  }
+
+  // async function updateAllFooterFields() {
+  //   const rows = document.querySelectorAll(".footer-row");
+  //
+  //   for (const row of rows) {
+  //     const type = row.querySelector("input[type='text']").dataset.type;
+  //     const value = row.querySelector("input[type='text']").value;
+  //     const enabled = row.querySelector(`input[name="enable-${type}"]:checked`).value === "true";
+  //
+  //     await fetch(`/editIndexPages/footer`, {
+  //       method: "PUT",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ type, value, enabled })
+  //     });
+  //   }
+  //
+  //   alert("All footer fields updated successfully.");
+  // }
+  async function updateAllFooterFields() {
+  const rows = document.querySelectorAll('.footer-row');
+  let changesApplied = false;
+  let messages = [];
+
+  for (let row of rows) {
+    const type = row.getAttribute('data-type');
+    const valueInput = row.querySelector('input[type="text"]');
+    const radioInput = row.querySelector('input[type="radio"]:checked');
+
+    const newValue = valueInput.value.trim();
+    const newEnabled = radioInput.value === "true";
+
+    const original = originalFooterData.find(item => item.type === type);
+    let changed = false;
+
+    if (!original) continue;
+
+    if (original.value !== newValue) {
+      messages.push(`${capitalize(type)} is updated`);
+      changed = true;
+    }
+
+    if (original.enabled !== newEnabled) {
+      messages.push(`${capitalize(type)} is ${newEnabled ? "enabled" : "disabled"}`);
+      changed = true;
+    }
+
+    if (changed) {
+      // Send update to server
+      await fetch("/editIndexPages/footer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, value: newValue, enabled: newEnabled }),
+      });
+
+      changesApplied = true;
+    }
+
+    // Disable fields again after update
+    valueInput.disabled = true;
+    row.querySelectorAll('input[type="radio"]').forEach(radio => radio.disabled = true);
+  }
+
+  if (!changesApplied) {
+    alert("No changes are applied");
+  } else {
+    alert(messages.join("\n"));
+  }
+}
+// Capitalize helper
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+// function capitalize(str) {
+//   return str.charAt(0).toUpperCase() + str.slice(1);
+// }
+
+  window.onload = loadFooterData;
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Home Page</title>
+  <link rel="stylesheet" href="../../cssStyles/editIndexPages.css" />
+  <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.css" />
+</head>
+<body>
+
+  <div class="sticky-dashboard-btn">
+    <button onclick="cancelEdit()" title="Back to Dashboard">⬅ Back to Dashboard</button> <!-- ✅ Uses cancelEdit -->
+  </div>
+
+  <div class="dashboard-container">
+    <h1>Edit Home Page</h1>
+
+    <div>
+      <label>Upload Logo:</label>
+      <input type="file" id="logoUpload" accept="image/*" />
+      <button onclick="showCropper()">Crop Logo</button> <!-- ✅ Defined below -->
+      <div id="shapeOptions">
+        <label><input type="radio" name="shape" value="rectangle" checked> Rectangle</label>
+        <label><input class="circle-logo" type="radio" name="shape" value="circle"> Circle</label>
+      </div>
+      <div id="cropContainer" style="display: none;"> <!-- ✅ Hidden initially -->
+        <img id="imageToCrop" style="max-width: 100%;" />
+        <button onclick="uploadCroppedLogo()">Upload Logo</button>
+      </div>
+      <div id="logoPreview"></div>
+    </div>
+
+    <div>
+      <label>Website Name:</label>
+      <input type="text" id="homeWebsitename" class="readonly" readonly placeholder="Enter Website name to display in About,contact Pages" />
+      <button onclick="enableEdit('homeWebsitename')">Edit</button>
+    </div>
+
+    <div>
+      <label>Header:</label>
+      <input type="text" id="homeHeader" class="readonly" readonly placeholder="Enter Home Page Header" />
+      <button onclick="enableEdit('homeHeader')">Edit</button>
+    </div>
+
+    <div>
+      <label>Paragraph:</label><br>
+      <textarea id="homeParagraph" rows="4" cols="50" class="readonly" readonly style="resize: none;" placeholder="Enter Home Page Paragraph"></textarea>
+      <button onclick="enableEdit('homeParagraph')">Edit</button>
+    </div>
+
+    <div class="button-group">
+      <button onclick="updateHomePage()">Update Home Page</button>
+      <button onclick="cancelEdit()">Cancel</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cropperjs@1.5.13/dist/cropper.min.js"></script>
+  <script>
+    let originalWebsitename = "";
+    let originalHeader = "";
+    let originalParagraph = "";
+    let currentLogoPublicId = '';
+    let uploadedLogoPublicId = '';
+    let uploadedLogoUrl = '';
+    let currentLogoUrl = '';
+    let cropper = null;
+
+    function enableEdit(id) {
+      const el = document.getElementById(id);
+      el.removeAttribute("readonly");
+      el.classList.remove("readonly");
+      el.focus();
+    }
+
+    async function loadHomePageData() {
+      try {
+        const res = await fetch("/editIndexPages/home");
+        const data = await res.json();
+
+        if (data.logoUrl) {
+          // const selectedShape = document.querySelector('input[name="shape"]:checked').value;
+          // document.getElementById("logoPreview").innerHTML =
+          //   `<img src="${data.logoUrl}" alt="Logo" width="120" />`;
+          // document.getElementById("logoPreview").innerHTML =
+          //   `<div><img src="${data.logoUrl}" alt="Logo" width="120" /></div>`;
+          const shapeClass = data.logoShape === "circle" ? "circle-logo" : "";
+          document.getElementById("logoPreview").innerHTML =
+            `<div class="${shapeClass}">
+               <img src="${data.logoUrl}" alt="Logo" width="120" />
+             </div>`;
+
+          currentLogoUrl = data.logoUrl;// ✅ Store current logo URL
+          currentLogoPublicId = extractPublicId(data.logoUrl);
+        }
+
+        // homeWebsitename
+        if (data.homeWebsitename) {
+          document.getElementById("homeWebsitename").value = data.homeWebsitename || "";
+          originalWebsiteName = data.homeWebsitename.trim();
+          // originalWebsitename
+        }
+
+        if (data.homeHeader) {
+          document.getElementById("homeHeader").value = data.homeHeader || "";
+          originalHeader = data.homeHeader.trim();
+        }
+
+        if (data.homeParagraph) {
+          document.getElementById("homeParagraph").value = data.homeParagraph || "";
+          originalParagraph = data.homeParagraph.trim();
+        }
+
+      } catch (err) {
+        console.error("Failed to load home page data", err);
+      }
+    }
+
+    function extractPublicId(url) {
+      const match = url.match(/\/websiteLogos\/([^/.]+)/);
+      return match ? `websiteLogos/${match[1]}` : null;
+    }
+
+    // function showCropper() { // ✅ Now properly defined
+    //   const input = document.getElementById("logoUpload");
+    //   const file = input.files[0];
+    //   if (!file) return alert("Please choose a file.");
+    //
+    //   const reader = new FileReader();
+    //   reader.onload = function (e) {
+    //     const image = document.getElementById("imageToCrop");
+    //     image.src = e.target.result;
+    //
+    //     if (cropper) cropper.destroy();
+    //
+    //     cropper = new Cropper(image, {
+    //       aspectRatio: NaN,
+    //       viewMode: 1,
+    //     });
+    //
+    //     document.getElementById("cropContainer").style.display = "block";
+    //   };
+    //   reader.readAsDataURL(file);
+    // }
+    function showCropper() {
+  const input = document.getElementById("logoUpload");
+  const file = input.files[0];
+
+  const image = document.getElementById("imageToCrop");
+  const selectedShape = document.querySelector('input[name="shape"]:checked').value;
+
+  if (!file && !image.src) {
+    return alert("Please choose or upload a file.");
+  }
+
+  // If no new file but already existing preview
+  if (!file && image.src) {
+    initializeCropper(image, selectedShape);
+    document.getElementById("cropContainer").style.display = "block";
+    return;
+  }
+
+  // If a new file is uploaded
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    image.src = e.target.result;
+    initializeCropper(image, selectedShape);
+    document.getElementById("cropContainer").style.display = "block";
+  };
+  reader.readAsDataURL(file);
+}
+
+function initializeCropper(image, shape) {
+  if (cropper) cropper.destroy();
+
+  const options = {
+    aspectRatio: NaN,  // Free form by default
+    viewMode: 1,
+  };
+
+  cropper = new Cropper(image, options);
+
+  if (shape === "circle") {
+    setTimeout(() => {
+      const cropBox = document.querySelector(".cropper-crop-box");
+      const face = document.querySelector(".cropper-face");
+      if (cropBox && face) {
+        cropBox.style.borderRadius = "50%";
+        face.style.borderRadius = "50%";
+      }
+    }, 100);
+  }
+}
+
+
+    async function uploadCroppedLogo() {
+      if (!cropper) return alert("Please select and crop a logo image.");
+
+      const canvas = cropper.getCroppedCanvas();
+      const blob = await new Promise(resolve => canvas.toBlob(resolve));
+      const selectedShape = document.querySelector('input[name="shape"]:checked').value;
+
+      const formData = new FormData();
+      formData.append("logo", blob, "cropped-logo.png");
+      formData.append("shape", selectedShape);
+
+      try {
+        const toDelete = uploadedLogoPublicId || currentLogoPublicId;
+        if (toDelete) await deleteLogoFromCloudinary(toDelete); // ✅ Delete old logo before new
+
+        const res = await fetch("/editIndexPages/uploadLogo", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.logoUrl && data.public_id) {
+          uploadedLogoPublicId = data.public_id;
+          uploadedLogoUrl = data.logoUrl;
+
+          const shapeClass = selectedShape === "circle" ? "circle-logo" : "";
+
+          document.getElementById("logoPreview").innerHTML =
+            `<div class="${shapeClass}">
+               <img src="${uploadedLogoUrl}" alt="Logo" width="120" />
+             </div>`;
+
+          // document.getElementById("logoPreview").innerHTML =
+          //   `<img src="${uploadedLogoUrl}" alt="Logo" width="120" />`;
+
+          // document.getElementById("logoPreview").innerHTML =
+          //   `<div class="${selectedShape === 'circle' ? 'circle-logo' : ''}">
+          //      <img src="${uploadedLogoUrl}" alt="Logo" width="120" />
+          //    </div>`;
+
+          alert("Logo uploaded successfully.");
+          document.getElementById("cropContainer").style.display = "none";
+          document.getElementById("logoUpload").value = "";
+        } else {
+          alert("Logo upload failed.");
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("Error uploading logo.");
+      }
+    }
+
+    async function deleteLogoFromCloudinary(publicId) {
+      try {
+        const res = await fetch("/editIndexPages/deleteLogo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ public_id: publicId })
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+          console.warn("Cloudinary delete failed:", data.message);
+        }
+      } catch (err) {
+        console.error("Error deleting logo from Cloudinary:", err);
+      }
+    }
+
+    async function updateHomePage() {
+      // homeWebsitename
+  const homeWebsitename = document.getElementById("homeWebsitename").value.trim();
+  const homeHeader = document.getElementById("homeHeader").value.trim();
+  const homeParagraph = document.getElementById("homeParagraph").value.trim();
+
+  if (!homeWebsitename || !homeHeader || !homeParagraph ) {
+    return alert("All Website name, Header and Paragraph are required.");
+  }
+// originalWebsitename
+  const isWebsitenameChanged = homeWebsitename !== originalWebsitename;
+  const isHeaderChanged = homeHeader !== originalHeader;
+  const isParagraphChanged = homeParagraph !== originalParagraph;
+  const isLogoChanged = !!uploadedLogoUrl;
+
+  if (!isWebsitenameChanged && !isHeaderChanged && !isParagraphChanged && !isLogoChanged) {
+    return alert("No changes detected.");
+  }
+
+  const content = {
+    homeWebsitename,
+    homeHeader,
+    homeParagraph,
+    logoUrl: uploadedLogoUrl || currentLogoUrl
+  };
+
+  try {
+    const res = await fetch("/editIndexPages/update", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ page: "home", content })
+    });
+
+    const data = await res.json();
+
+    if (data.message === "Page updated successfully") {
+      let updateMsg = "Updated: ";
+
+      if (isLogoChanged) updateMsg += "Logo ";
+      if (isHeaderChanged) updateMsg += (isLogoChanged ? ", Header " : "Header ");
+      if (isParagraphChanged) updateMsg += ((isLogoChanged || isHeaderChanged) ? ", Paragraph" : "Paragraph");
+
+      alert(updateMsg.trim() + " successfully.");
+// homeWebsitename,originalWebsitename
+      // ✅ Update original values
+      originalWebsitename = homeWebsitename,
+      originalHeader = homeHeader;
+      originalParagraph = homeParagraph;
+
+      // ✅ Update logo tracking
+      currentLogoUrl = uploadedLogoUrl || currentLogoUrl;
+      currentLogoPublicId = uploadedLogoPublicId || currentLogoPublicId;
+      uploadedLogoPublicId = '';
+      uploadedLogoUrl = '';
+
+      window.location.href = "/admin/adminDashboardUi.html";
+    } else {
+      alert("Update failed.");
+    }
+  } catch (err) {
+    console.error("Update error:", err);
+    alert("Error updating home page.");
+  }
+}
+
+
+    async function cancelEdit() {
+      if (uploadedLogoPublicId) {
+        await deleteLogoFromCloudinary(uploadedLogoPublicId); // ✅ Delete unsaved uploaded logo
+      }
+
+      window.location.href = "/admin/adminDashboardUi.html";
+    }
+
+    window.onload = loadHomePageData;
+  </script>
+</body>
+</html>

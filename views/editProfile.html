@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="/cssStyles/speakersCssStyle.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/cssStyles/editProfile.css">
+</head>
+<body>
+
+<h2>Edit Your Profile</h2>
+
+<div>
+  <label>Current Profile Photo:</label><br>
+  <img id="currentProfileImage" src="/public/images/default.jpg" width="100" height="100"><br><br>
+
+  <label>New Profile Photo:</label><br>
+  <input type="file" id="newProfileImage" accept="image/*"><br>
+  <div id="cropperModal" style="display:none;">
+    <img id="cropperImage" style="max-width: 300px;"><br>
+
+    <div id="cropperPreview">
+      <canvas id="livePreview" width="260" height="360"></canvas>
+    </div>
+
+    <button onclick="cropAndUpload()">Crop & Upload</button>
+  </div>
+
+  <label>Topic:</label><br>
+  <input type="text" id="topicInput" placeholder="Enter your topic" /><br><br>
+
+  <label>Brief Intro:</label><br>
+  <textarea id="briefIntro" rows="4" placeholder="Enter brief intro..."></textarea><br>
+
+  <button id="updateBtn" onclick="updateProfile()" disabled>Update Profile</button>
+  <button onclick="goBack()">Cancel</button>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+// 1. Add this once
+  function forceRefreshSpeakerInfo(slug) {
+    sessionStorage.removeItem(`speakerInfo_${slug}`);
+  }
+
+  document.getElementById("updateBtn").addEventListener("click", async function () {
+      // ✅ Extract values dynamically
+      const slug = document.getElementById("speakerSlug").value;
+      const email = document.getElementById("speakerEmail").value;
+
+      // ✅ Perform validations and Cloudinary upload logic...
+      const uploadSuccess = true; // ← Set this based on actual success logic
+
+      if (uploadSuccess) {
+        forceRefreshSpeakerInfo(slug); // ✅ Dynamically clear cache
+        window.location.href = `/${slug}.html`; // ✅ Redirect to the correct speaker page
+      }
+    });
+
+  const email = localStorage.getItem("email");
+  if (!email) {
+    alert("You must log in first!");
+    window.location.href = "login.html";
+  }
+
+  let originalIntro = "";
+  let originalImageUrl = "";
+  let originalTopic = ""; // ✅ ADD THIS
+  let newProfileImageUrl = "";
+  let cropper;
+
+  const updateBtn = document.getElementById("updateBtn");
+
+  function checkForChanges() {
+    const newTopic =  document.getElementById("topicInput").value.trim();
+    const newIntro = document.getElementById("briefIntro").value.trim();
+    const topicChanged = newTopic !== originalTopic.trim();
+    const introChanged = newIntro !== originalIntro.trim();
+    const imageChanged = !!newProfileImageUrl && newProfileImageUrl !== originalImageUrl;
+    updateBtn.disabled = !(topicChanged || introChanged || imageChanged);
+  }
+
+  async function loadUserProfile() {
+  try {
+    const res = await fetch(`/users/email/${encodeURIComponent(email)}`);
+    const data = await res.json();
+    const user = data.user || {};
+
+    originalImageUrl = user.profileImage || "/public/images/default.jpg";
+    newProfileImageUrl = "";
+    originalTopic = user.topic || "";
+    document.getElementById("topicInput").value = originalTopic;
+    console.log("Fetched topic:", user.topic);
+    originalIntro = user.intro || "";
+
+
+    document.getElementById("currentProfileImage").src = originalImageUrl;
+
+    document.getElementById("topicInput").value = originalTopic;
+    // ✅ SHOW intro in textarea
+    document.getElementById("briefIntro").value = originalIntro;
+
+    // ✅ Add input listener
+    document.getElementById("topicInput").addEventListener("input", checkForChanges);
+    document.getElementById("briefIntro").addEventListener("input", checkForChanges);
+
+    // ✅ Initial check
+    checkForChanges();
+  } catch (err) {
+    console.error("Error loading user data", err);
+    alert("Failed to load profile info.");
+  }
+}
+
+  loadUserProfile();
+
+  document.getElementById("newProfileImage").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById("cropperImage").src = reader.result;
+      document.getElementById("cropperModal").style.display = "block";
+
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(document.getElementById("cropperImage"), {
+        // aspectRatio: 1,
+        // viewMode: 1,
+        aspectRatio: 3 / 4, // ✅ Portrait format: width:height = 3:4
+        viewMode: 1,
+        autoCropArea: 1,
+        responsive: true,
+        background: false,
+        ready() {
+          updateLivePreview();
+        },
+        crop() {
+          updateLivePreview();
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function updateLivePreview() {
+    if (!cropper) return;
+    const canvas = cropper.getCroppedCanvas({
+      width: 260,
+      height: 360,
+    });
+    const previewCanvas = document.getElementById("livePreview");
+    const ctx = previewCanvas.getContext("2d");
+    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    ctx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+  }
+
+  function cropAndUpload() {
+    if (!cropper) return alert("Please select an image first.");
+    // document.getElementById("cropUploadBtn").addEventListener("click", () => {
+    // cropper.getCroppedCanvas().toBlob(blob => {
+    cropper.getCroppedCanvas({ width: 260, height: 360 }).toBlob(blob => {
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("profileImage", blob);
+
+      fetch("/users/updateProfile", {
+        method: "PUT",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.imageUrl) {
+          newProfileImageUrl = result.imageUrl;
+          document.getElementById("currentProfileImage").src = newProfileImageUrl;
+          document.getElementById("cropperModal").style.display = "none";
+          alert("Profile photo uploaded successfully.");
+          updateBtn.disabled = false;
+          checkForChanges();
+
+        } else {
+          alert("Image upload failed.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error uploading image.");
+      });
+    }, "image/jpeg");
+  // });
+}
+
+  function updateProfile() {
+    const newTopic = document.getElementById("topicInput").value.trim();
+  const newIntro = document.getElementById("briefIntro").value.trim();
+  const currentImage = document.getElementById("currentProfileImage").src;
+
+  const topicPattern = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+  const topicChanged = newTopic !== originalTopic;
+  const introChanged = newIntro !== originalIntro;
+  const imageChanged = !!newProfileImageUrl && newProfileImageUrl !== originalImageUrl;
+
+  // 🛑 Nothing changed
+  if (!introChanged && !imageChanged && !topicChanged) {
+    alert("There are no changes to update.");
+    return;
+  }
+
+  // 🛑 If brief intro is empty
+  if (!newIntro) {
+    alert("Brief intro is mandatory, please provide details.");
+    return;
+  }
+  if (!newTopic) {
+  alert("Topic is mandatory.");
+  return;
+}
+
+if (!topicPattern.test(newTopic)) {
+  alert("Topic can only contain letters and single spaces between words. No special characters allowed.");
+  return;
+}
+
+  // 🛑 If no profile image at all (new or existing)
+  const isDefaultImage = currentImage.includes("default.jpg");
+  if (isDefaultImage && !newProfileImageUrl) {
+    alert("Profile photo is mandatory, please upload.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("intro", newIntro);
+  formData.append("topic", newTopic); // ✅ Add topic
+
+  if (imageChanged) {
+    fetch(newProfileImageUrl)
+      .then(res => res.blob())
+      .then(blob => {
+        formData.append("profileImage", blob);
+        return fetch("/users/updateProfile", {
+          method: "PUT",
+          body: formData
+        });
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert("✅ Profile Image updated.");
+          // 🔄 Clear speaker info cache
+          const slug = email.split("@")[0].toLowerCase();
+          sessionStorage.removeItem(`speakerInfo_${slug}`);
+          // refreshAndRenderSpeakerInfo(slug, email);
+
+          // window.location.href = "speakersHome.html";
+        // window.location.href = `/${slug}.html`;
+        setTimeout(() => {
+       window.location.href = "speakersHome.html";
+    }, 500);
+        } else {
+          alert("Update failed.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error updating profile.");
+      });
+  } else {
+    // Only intro changed
+    fetch("/users/updateProfile", {
+      method: "PUT",
+      body: formData
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        alert("✅ Profile Intro updated.");
+
+        // 🔄 Clear speaker info cache
+        const slug = email.split("@")[0].toLowerCase();
+        sessionStorage.removeItem(`speakerInfo_${slug}`);
+
+        // refreshAndRenderSpeakerInfo(slug, email);
+
+        // window.location.href = "speakersHome.html";
+        // window.location.href = `/${slug}.html`;
+        setTimeout(() => {
+       window.location.href = "speakersHome.html";
+    }, 500);
+      } else {
+        alert("Update failed.");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Error updating profile.");
+    });
+  }
+}
+
+// function checkForChanges() {
+//   const newIntro = document.getElementById("briefIntro").value.trim();
+//   const introChanged = newIntro !== originalIntro.trim();
+//   const imageChanged = !!newProfileImageUrl && newProfileImageUrl !== originalImageUrl;
+//   updateBtn.disabled = !(introChanged || imageChanged);
+// }
+//
+// document.getElementById("briefIntro").addEventListener("input", checkForChanges);
+
+
+  function goBack() {
+      document.getElementById("topicInput").value = originalTopic;
+    document.getElementById("briefIntro").value = originalIntro;
+    document.getElementById("currentProfileImage").src = originalImageUrl;
+    window.location.href = "speakersHome.html";
+  }
+</script>
+
+</body>
+</html>

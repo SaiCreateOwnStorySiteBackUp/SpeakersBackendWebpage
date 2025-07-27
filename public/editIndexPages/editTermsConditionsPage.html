@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Terms & Conditions Page</title>
+  <link rel="stylesheet" href="../../cssStyles/editIndexPages.css" />
+</head>
+<body>
+
+  <div class="sticky-dashboard-btn">
+  <button onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">⬅ Dashboard</button>
+</div>
+
+  <div class="dashboard-container">
+    <h1>Edit Terms & Conditions</h1>
+
+    <div>
+      <label>Header:</label><br>
+      <input type="text" id="termsHeader" placeholder="Enter header text" />
+    </div>
+
+    <div>
+      <label>Terms and Conditions:</label><br>
+      <textarea id="termsText" rows="10" cols="70" placeholder="Enter Terms and Conditions..."></textarea>
+    </div>
+
+    <!-- Update & Cancel Buttons -->
+    <div class="button-group">
+      <button onclick="updateTermsConditions()">Update Terms & Conditions</button>
+      <button onclick="window.location.href='../../admin/adminDashboardUi.html'">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+  let originalTermsHeader = "";
+  let originalTermsText = "";
+    async function updateTermsConditions() {
+      const termsHeaderText = document.getElementById("termsHeader").value.trim();
+      const termsTextMessage = document.getElementById("termsText").value.trim();
+
+      if (!termsHeaderText || !termsTextMessage) {
+        alert("Please fill all fields");
+        return;
+      }
+      if (
+      termsHeaderText === originalTermsHeader.trim() &&
+      termsTextMessage === originalTermsText.trim()
+    ) {
+      alert("There are no changes. Click on Cancel button to go back");
+      // window.location.href = "/admin/adminDashboardUi.html";
+      return;
+    }
+
+      const termsConditionsData = {
+        termsHeader: termsHeaderText,
+        termsText: termsTextMessage
+      };
+
+      try {
+        const res = await fetch("/editIndexPages/update", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+          page: "terms",
+          content: termsConditionsData
+        })
+          });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("Terms and Conditions page updated successfully");
+          window.location.href = "/admin/adminDashboardUi.html";
+        } else {
+          alert("Failed to update: " + data.error);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        alert("Something went wrong. Try again.");
+      }
+    }
+// const res = await fetch("/editIndexPages/about");
+    async function loadTermsConditionsPageData() {
+      try {
+        const res = await fetch("/editIndexPages/terms");
+        if (!res.ok) throw new Error("Failed to fetch Terms and Conditions data");
+        const data = await res.json();
+
+        originalTermsHeader = data.termsAndConditionsHeader || "";
+      originalTermsText = data.termsAndConditionsText || "";
+
+      document.getElementById("termsHeader").value = originalTermsHeader;
+      document.getElementById("termsText").value = originalTermsText;
+      } catch (err) {
+        console.error("Error loading Terms and Conditions data:", err);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", loadTermsConditionsPageData);
+  </script>
+</body>
+</html>

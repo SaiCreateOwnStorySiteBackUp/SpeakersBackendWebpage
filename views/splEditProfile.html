@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="/cssStyles/speakersCssStyle.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/cssStyles/editProfile.css">
+</head>
+<body>
+
+<h2>Edit Your Profile</h2>
+
+<div>
+  <label>Current Profile Photo:</label><br>
+  <img id="currentProfileImage" src="/public/images/default.jpg" width="100" height="100"><br><br>
+
+  <label>New Profile Photo:</label><br>
+  <input type="file" id="newProfileImage" accept="image/*"><br>
+  <div id="cropperModal" style="display:none;">
+    <img id="cropperImage" style="max-width: 300px;"><br>
+
+    <div id="cropperPreview">
+      <canvas id="livePreview" width="260" height="360"></canvas>
+    </div>
+
+    <button onclick="cropAndUpload()">Crop & Upload</button>
+  </div>
+
+  <label>Topic:</label><br>
+  <input type="text" id="topicInput" placeholder="Enter your topic" /><br><br>
+
+  <label>Brief Intro:</label><br>
+  <textarea id="briefIntro" rows="4" placeholder="Enter brief intro..."></textarea><br>
+
+  <button id="updateBtn" disabled>Update Profile</button>
+  <input type="hidden" id="speakerSlug" value="seshu" />
+  <button onclick="goBack()">Cancel</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+// 1. Add this once
+  function forceRefreshSpeakerInfo(slug) {
+    sessionStorage.removeItem(`speakerInfo_${slug}`);
+  }
+
+  document.getElementById("updateBtn").addEventListener("click", async function () {
+      // ✅ Extract values dynamically
+      const slug = document.getElementById("speakerSlug").value;
+      const email = document.getElementById("speakerEmail").value;
+
+      // ✅ Perform validations and Cloudinary upload logic...
+      const uploadSuccess = true; // ← Set this based on actual success logic
+
+      if (uploadSuccess) {
+        forceRefreshSpeakerInfo(slug); // ✅ Dynamically clear cache
+        sessionStorage.clear();
+        window.location.href = `/${slug}.html`; // ✅ Redirect to the correct speaker page
+      }
+    });
+
+  const email = localStorage.getItem("email");
+  if (!email) {
+    alert("You must log in first!");
+    window.location.href = "login.html";
+  }
+
+  let originalTopic = "";
+  let originalIntro = "";
+  let originalImageUrl = "";
+  let newProfileImageUrl = "";
+  let croppedBlob = null;
+  let cropper;
+
+  const updateBtn = document.getElementById("updateBtn");
+
+  function checkForChanges() {
+  const newTopic = document.getElementById("topicInput").value.trim();
+  const newIntro = document.getElementById("briefIntro").value.trim();
+
+  const topicChanged = newTopic !== originalTopic.trim();
+  const introChanged = newIntro !== originalIntro.trim();
+  const imageChanged = !!newProfileImageUrl && newProfileImageUrl !== originalImageUrl;
+
+  const anyChanged = topicChanged || introChanged || imageChanged;
+
+  updateBtn.disabled = !anyChanged;
+
+  if (anyChanged) {
+    updateBtn.classList.add("enabled");
+    updateBtn.style.backgroundColor = "#007bff";
+    updateBtn.style.cursor = "pointer";
+  } else {
+    updateBtn.classList.remove("enabled");
+    updateBtn.style.backgroundColor = "grey";
+    updateBtn.style.cursor = "not-allowed";
+  }
+}
+
+
+  async function fetchAndPopulateSpeakerProfile() {
+    try {
+      const res = await fetch(`/users/splusers/email/${email}`);
+      const resData = await res.json();
+
+      if (resData.success && resData.user) {
+        const { topic, intro, profileImage } = resData.user;
+
+        // ✅ Populate inputs
+        originalTopic = topic || "";
+        originalIntro = intro || "";
+        originalImageUrl = profileImage || "/public/images/default.jpg";
+
+        document.getElementById("topicInput").value = originalTopic;
+        document.getElementById("briefIntro").value = originalIntro;
+        document.getElementById("currentProfileImage").src = `${originalImageUrl}?t=${Date.now()}`;
+
+        // ✅ Input listeners
+        // document.getElementById("topicInput").addEventListener("input", checkForChanges);
+        // document.getElementById("briefIntro").addEventListener("input", checkForChanges);
+        document.getElementById("topicInput").addEventListener("input", checkForChanges);
+        document.getElementById("briefIntro").addEventListener("input", checkForChanges);
+
+        checkForChanges();
+      } else {
+        alert("Could not load speaker profile data.");
+      }
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+      alert("Failed to fetch speaker profile.");
+    }
+  }
+
+  // ✅ Call on load
+  fetchAndPopulateSpeakerProfile();
+
+  updateBtn.addEventListener("click", async () => {
+  if (!updateBtn.classList.contains("enabled")) {
+    alert("No changes were made.");
+    return;
+  }
+
+  const formData = new FormData();
+  const changes = {
+    imageChanged: false,
+    topicChanged: false,
+    introChanged: false,
+  };
+
+  // Profile image
+  if (croppedBlob) {
+    formData.append("profileImage", croppedBlob, "cropped_image.jpg");
+    changes.imageChanged = true;
+  }
+
+  const currentTopic = document.getElementById("topicInput").value.trim();
+const currentIntro = document.getElementById("briefIntro").value.trim();
+
+  // Topic
+  if (currentTopic !== originalTopic) {
+    formData.append("topic", currentTopic);
+    changes.topicChanged = true;
+  }
+
+  // Intro
+  if (currentIntro !== originalIntro) {
+    formData.append("intro", currentIntro);
+    changes.introChanged = true;
+  }
+
+  // If no changes detected (extra safety)
+  if (!changes.imageChanged && !changes.topicChanged && !changes.introChanged) {
+    alert("No changes were made.");
+    return;
+  }
+
+  formData.append("email", email); // Attach email
+
+  try {
+    const res = await fetch("/users/splusers/updateProfile", {
+      method: "PUT",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      // ✅ Success: Show summary message
+      const updatedFields = [];
+      if (changes.imageChanged) updatedFields.push("profile image");
+      if (changes.topicChanged) updatedFields.push("topic");
+      if (changes.introChanged) updatedFields.push("brief intro");
+
+      alert(`✅ Profile updated: ${updatedFields.join(", ")}`);
+
+      // Wait 2 seconds, then redirect
+      setTimeout(() => {
+        sessionStorage.clear();
+        window.location.href = "splSpeakershome.html";
+      }, 2000);
+    } else {
+      alert("Update failed. Please try again.");
+    }
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    alert("An error occurred. Please try again.");
+  }
+});
+
+
+  document.getElementById("newProfileImage").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      document.getElementById("cropperImage").src = reader.result;
+      document.getElementById("cropperModal").style.display = "block";
+
+      if (cropper) cropper.destroy();
+      cropper = new Cropper(document.getElementById("cropperImage"), {
+        // aspectRatio: 1,
+        // viewMode: 1,
+        aspectRatio: 3 / 4, // ✅ Portrait format: width:height = 3:4
+        viewMode: 1,
+        autoCropArea: 1,
+        responsive: true,
+        background: false,
+        ready() {
+          updateLivePreview();
+        },
+        crop() {
+          updateLivePreview();
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function updateLivePreview() {
+    if (!cropper) return;
+    const canvas = cropper.getCroppedCanvas({
+      width: 260,
+      height: 360,
+    });
+    const previewCanvas = document.getElementById("livePreview");
+    const ctx = previewCanvas.getContext("2d");
+    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    ctx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+  }
+
+  function cropAndUpload() {
+    if (!cropper) return alert("Please select an image first.");
+    cropper.getCroppedCanvas({ width: 260, height: 360 }).toBlob(blob => {
+      croppedBlob = blob;
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("profileImage", blob);
+
+      fetch("/users/updateProfile", {
+        method: "PUT",
+        body: formData
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success && result.imageUrl) {
+          newProfileImageUrl = result.imageUrl;
+          document.getElementById("currentProfileImage").src = newProfileImageUrl;
+          document.getElementById("cropperModal").style.display = "none";
+          alert("Profile photo uploaded successfully.");
+          checkForChanges();
+
+        } else {
+          alert("Image upload failed.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error uploading image.");
+      });
+    }, "image/jpeg");
+}
+
+  function goBack() {
+      document.getElementById("topicInput").value = originalTopic;
+    document.getElementById("briefIntro").value = originalIntro;
+    document.getElementById("currentProfileImage").src = originalImageUrl;
+    window.location.href = "splSpeakershome.html";
+  }
+</script>
+
+</body>
+</html>

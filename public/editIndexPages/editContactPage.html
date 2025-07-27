@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Contact Page</title>
+  <link rel="stylesheet" href="../../cssStyles/editIndexPages.css" />
+</head>
+<body>
+
+  <div class="sticky-dashboard-btn">
+    <button onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">⬅ Dashboard</button>
+  </div>
+
+  <div class="dashboard-container">
+    <h1>Edit Contact Page</h1>
+
+    <div>
+      <label>Header:</label><br>
+      <input type="text" id="contactHeader" placeholder="Enter header text" />
+    </div>
+
+    <div>
+      <label>Address:</label><br>
+      <textarea id="contactAddress" rows="3" cols="60" placeholder="Enter address"></textarea>
+    </div>
+
+    <div>
+      <label>Mobile:</label><br>
+      <div style="display: flex; align-items: center;">
+        <span style="margin-right: 5px;">+91</span>
+        <input type="text" id="contactMobile" placeholder="Enter 10-digit mobile number" maxlength="10" />
+      </div>
+    </div>
+
+    <div>
+      <label>Email:</label><br>
+      <input type="email" id="contactEmail" placeholder="Enter email" />
+    </div>
+
+    <div>
+      <label>TriggerdToEmail:</label><br>
+      <input type="email" id="contactTriggeredEmail" placeholder="Enter email" />
+    </div>
+
+    <div>
+      <label>Message:</label><br>
+      <textarea id="contactMessage" rows="4" cols="60" placeholder="Enter message or note"></textarea>
+    </div>
+
+    <div class="button-group">
+      <button onclick="updateContactPage()">Update Contact Page</button>
+      <button onclick="window.location.href='/admin/adminDashboardUi.html'">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    function validateMobile(mobile) {
+      const regex = /^[0-9]{10}$/;
+      return regex.test(mobile);
+    }
+
+    async function updateContactPage() {
+      const header = document.getElementById("contactHeader").value.trim();
+      const address = document.getElementById("contactAddress").value.trim();
+      const mobile = document.getElementById("contactMobile").value.trim();
+      const email = document.getElementById("contactEmail").value.trim();
+      const message = document.getElementById("contactMessage").value.trim();
+      const triggeredEmail = document.getElementById("contactTriggeredEmail").value.trim();
+
+      if (!header || !address || !mobile || !email || !message || !triggeredEmail) {
+        alert("Please fill all fields");
+        return;
+      }
+
+      if (!validateMobile(mobile)) {
+        alert("Mobile number must be exactly 10 digits.");
+        return;
+      }
+
+      const contactData = {
+        contactHeader: header,
+        contactAddress: address,
+        contactMobile: "+91" + mobile,
+        contactEmail: email,
+        contactMessage: message,
+        contactTriggeredEmail: triggeredEmail
+      };
+
+      try {
+        const res = await fetch("/editIndexPages/update", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+          page: "contact",
+          content: contactData
+        })
+          });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert("Contact page updated successfully");
+          window.location.href = "/admin/adminDashboardUi.html";
+        } else {
+          alert("Failed to update: " + data.error);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        alert("Something went wrong. Try again.");
+      }
+    }
+// const res = await fetch("/editIndexPages/about");
+    async function loadContactPageData() {
+      try {
+        const res = await fetch("/editIndexPages/contact");
+        if (!res.ok) throw new Error("Failed to fetch contact data");
+        const data = await res.json();
+
+        document.getElementById("contactHeader").value = data.contactHeader || "";
+        document.getElementById("contactAddress").value = data.contactAddress || "";
+        document.getElementById("contactMobile").value = (data.contactMobile || "").replace("+91", "");
+        document.getElementById("contactEmail").value = data.contactEmail || "";
+        document.getElementById("contactMessage").value = data.contactMessage || "";
+        document.getElementById("contactTriggeredEmail").value = data.contactTriggeredEmail || "";
+      } catch (err) {
+        console.error("Error loading contact data:", err);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", loadContactPageData);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Header Section</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #menuContainer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .menu-card {
+      border: 1px solid #ccc;
+      padding: 15px;
+      border-radius: 8px;
+      min-width: 250px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .menu-card input[type="text"] {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .icon-btns i {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    .icon-btns i:hover {
+      color: #007BFF;
+    }
+
+    .action-btns {
+      margin-top: 10px;
+    }
+
+    .action-btns button {
+      margin-right: 8px;
+      padding: 5px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #addMenuBtn {
+      margin-bottom: 20px;
+      background-color: #28a745;
+      color: white;
+      padding: 8px 16px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    #addMenuBtn:hover {
+      background-color: #218838;
+    }
+
+    #save-order-btn {
+      margin-bottom: 20px;
+      background-color: #28a745;
+      color: white;
+      padding: 8px 16px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+    #save-order-btn:hover {
+      background-color: #218838;
+    }
+.addMenuBtn-lst{
+  margin-top: 20px;
+}
+    .confirm-delete {
+      color: red;
+      margin-top: 10px;
+    }
+
+    .confirm-delete button {
+      margin-right: 8px;
+    }
+    #backBtn {
+      position: fixed;
+      top: 20px;
+      right: 30px;
+      background-color: #34495e;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      display: static; /* Hidden initially */
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: background-color 0.3s ease;
+    }
+
+    #backBtn:hover {
+      background-color: #2c3e50;
+    }
+
+    .draggable-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  width: 300px;
+}
+
+.draggable-item {
+  padding: 10px;
+  background-color: #f5f5f5;
+  margin-bottom: 5px;
+  cursor: grab;
+  border: 1px solid #ccc;
+}
+
+.draggable-item.dragging {
+  opacity: 0.5;
+  background-color: #ddd;
+}
+  </style>
+</head>
+<body>
+
+  <h2>Edit Header Section</h2>
+  <button id="backBtn" onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">⬅ Dashboard</button>
+    <div>
+      <h2>Reorder Header Menus (Drag and Drop)</h2>
+      <ul id="menu-list" class="draggable-list"></ul>
+      <button id="save-order-btn">Save Menu Order</button>
+    </div>
+
+    <div class="addMenuBtn-lst">
+      <button id="addMenuBtn">Add Menu</button>
+      <div id="menuContainer"></div>
+    </div>
+
+  <script>
+    let allMenus = [];
+    let currentEditingId = null;
+
+    async function fetchMenus() {
+      const res = await fetch("/header/menus");
+      const data = await res.json();
+      // allMenus = data;
+      allMenus = data.sort((a, b) => a.menuOrder - b.menuOrder);
+      renderMenus();
+      fetchAndRenderDraggableList();
+    }
+    //
+    // function renderMenus() {
+    //   const container = document.getElementById("menuContainer");
+    //   container.innerHTML = "";
+    //
+    //   allMenus.forEach(menu => {
+    //     const div = document.createElement("div");
+    //     div.className = "menu-card";
+    //
+    //     div.innerHTML = `
+    //       <input type="text" value="${menu.title}" disabled />
+    //       <div class="radio-buttons" style="margin-top: 5px;">
+    //         <label><input type="radio" name="visible-${menu._id}" value="true" ${menu.visible ? 'checked' : ''} disabled /> Enable</label>
+    //         <label><input type="radio" name="visible-${menu._id}" value="false" ${!menu.visible ? 'checked' : ''} disabled /> Disable</label>
+    //       </div>
+    //       <div class="icon-btns">
+    //         <i class="fas fa-pen edit-icon" title="Edit"></i>
+    //         <i class="fas fa-trash delete-icon" title="Delete"></i>
+    //         <i class="fas fa-check update-icon" title="Update" style="display:none;"></i>
+    //       </div>
+    //       <div class="confirm-delete" style="display:none;">
+    //         Are you sure to delete "${menu.title}"?<br/>
+    //         <button class="yes-btn">Yes</button>
+    //         <button class="no-btn">No</button>
+    //       </div>
+    //     `;
+    //
+    //     container.appendChild(div);
+    //
+    //     const input = div.querySelector("input");
+    //     const editIcon = div.querySelector(".edit-icon");
+    //     const deleteIcon = div.querySelector(".delete-icon");
+    //     const updateIcon = div.querySelector(".update-icon");
+    //     const confirmBox = div.querySelector(".confirm-delete");
+    //     const yesBtn = div.querySelector(".yes-btn");
+    //     const noBtn = div.querySelector(".no-btn");
+    //
+    //     editIcon.onclick = () => {
+    //       input.disabled = false;
+    //       const radios = div.querySelectorAll('input[type="radio"]');
+    //       radios.forEach(r => r.disabled = false);
+    //       updateIcon.style.display = "inline";
+    //     };
+    //
+    //     updateIcon.onclick = async () => {
+    //       const newTitle = input.value.trim();
+    //       const visibleValue = div.querySelector(`input[name="visible-${menu._id}"]:checked`).value === 'true';
+    //       if (newTitle && newTitle !== menu.title) {
+    //         const res = await fetch(`/header/menus/${menu._id}`, {
+    //           method: "PUT",
+    //           headers: { "Content-Type": "application/json" },
+    //           body: JSON.stringify({ title: newTitle })
+    //         });
+    //         const result = await res.json();
+    //         if (result.success) {
+    //           fetchMenus();
+    //         }
+    //       }
+    //     };
+    //
+    //     deleteIcon.onclick = () => {
+    //       confirmBox.style.display = "block";
+    //     };
+    //
+    //     yesBtn.onclick = async () => {
+    //       await fetch(`/header/menus/${menu._id}`, { method: "DELETE" });
+    //       fetchMenus();
+    //     };
+    //
+    //     noBtn.onclick = () => {
+    //       confirmBox.style.display = "none";
+    //     };
+    //   });
+    // }
+    //
+
+
+    function renderMenus() {
+  const container = document.getElementById("menuContainer");
+  container.innerHTML = "";
+  let currentlyEditing = null;
+
+  allMenus.forEach(menu => {
+    const div = document.createElement("div");
+    div.className = "menu-card";
+
+    div.innerHTML = `
+      <input type="text" value="${menu.title}" disabled />
+      <div class="radio-buttons" style="margin-top: 5px;">
+        <label><input type="radio" name="visible-${menu._id}" value="true" ${menu.visible ? 'checked' : ''} disabled /> Enable</label>
+        <label><input type="radio" name="visible-${menu._id}" value="false" ${!menu.visible ? 'checked' : ''} disabled /> Disable</label>
+      </div>
+      <div class="icon-btns">
+        <i class="fas fa-pen edit-icon" title="Edit"></i>
+        <i class="fas fa-trash delete-icon" title="Delete"></i>
+        <i class="fas fa-check update-icon" title="Update" style="display:none;"></i>
+      </div>
+      <div class="confirm-delete" style="display:none;">
+        Are you sure to delete "${menu.title}"?<br/>
+        <button class="yes-btn">Yes</button>
+        <button class="no-btn">No</button>
+      </div>
+    `;
+
+    container.appendChild(div);
+
+    const input = div.querySelector("input");
+    const editIcon = div.querySelector(".edit-icon");
+    const deleteIcon = div.querySelector(".delete-icon");
+    const updateIcon = div.querySelector(".update-icon");
+    const confirmBox = div.querySelector(".confirm-delete");
+    const yesBtn = div.querySelector(".yes-btn");
+    const noBtn = div.querySelector(".no-btn");
+    const radios = div.querySelectorAll('input[type="radio"]');
+
+    // 🖊️ EDIT
+    editIcon.onclick = () => {
+      if (currentlyEditing !== null) {
+        alert("You can only edit one menu item at a time. Please finish or cancel the current edit.");
+        return;
+      }
+      currentlyEditing = menu._id;
+
+      input.disabled = false;
+      radios.forEach(r => r.disabled = false);
+      updateIcon.style.display = "inline";
+    };
+
+    // ✅ UPDATE
+    updateIcon.onclick = async () => {
+      const newTitle = input.value.trim();
+      const newVisible = div.querySelector(`input[name="visible-${menu._id}"]:checked`).value === 'true';
+
+      const titleChanged = newTitle !== menu.title;
+      const visibilityChanged = newVisible !== menu.visible;
+
+      if (!titleChanged && !visibilityChanged) {
+        alert("No changes applied. Click on Edit icon to edit again.");
+        input.disabled = true;
+        radios.forEach(r => r.disabled = true);
+        updateIcon.style.display = "none";
+        currentlyEditing = null;
+        return;
+      }
+
+      const res = await fetch(`/header/menus/${menu._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle, visible: newVisible })
+      });
+
+      const result = await res.json();
+      if (result.success) {
+        alert("Changes updated successfully.");
+        currentlyEditing = null;
+        fetchMenus();
+      } else {
+        alert("Failed to update menu.");
+      }
+    };
+
+    // 🗑️ DELETE
+    deleteIcon.onclick = () => {
+      if (currentlyEditing === menu._id) {
+        alert("Finish editing before deleting this item.");
+        return;
+      }
+      confirmBox.style.display = "block";
+    };
+
+    yesBtn.onclick = async () => {
+      await fetch(`/header/menus/${menu._id}`, { method: "DELETE" });
+      fetchMenus();
+    };
+
+    noBtn.onclick = () => {
+      confirmBox.style.display = "none";
+    };
+  });
+}
+document.getElementById("addMenuBtn").onclick = () => {
+  const container = document.getElementById("menuContainer");
+  const div = document.createElement("div");
+  div.className = "menu-card";
+
+  div.innerHTML = `
+    <input type="text" placeholder="Enter menu title (e.g., Home)" />
+    <div class="action-btns">
+      <button class="create-btn">Create</button>
+      <button class="cancel-btn">Cancel</button>
+    </div>
+  `;
+  container.prepend(div);
+
+  div.querySelector(".create-btn").onclick = async () => {
+    const title = div.querySelector("input").value.trim();
+    if (!title) return alert("Please enter a menu name.");
+
+    const res = await fetch("/header/menus", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      fetchMenus();
+    } else {
+      alert(result.message || "Error creating menu.");
+    }
+  };
+
+  div.querySelector(".cancel-btn").onclick = () => {
+    div.remove();
+  };
+};
+    document.addEventListener("DOMContentLoaded", fetchMenus);
+
+
+    async function fetchAndRenderDraggableList() {
+  const list = document.getElementById("menu-list");
+  list.innerHTML = "";
+  allMenus.forEach(menu => {
+    const li = document.createElement("li");
+    li.className = "draggable-item";
+    li.draggable = true;
+    li.dataset.id = menu._id;
+    li.textContent = menu.title;
+    list.appendChild(li);
+  });
+  enableDragAndDrop();
+}
+
+function enableDragAndDrop() {
+  const items = document.querySelectorAll('.draggable-item');
+  let dragSrcEl = null;
+
+  items.forEach(item => {
+    item.addEventListener('dragstart', function (e) {
+      dragSrcEl = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragover', function (e) {
+      e.preventDefault();
+    });
+
+    item.addEventListener('drop', function (e) {
+      e.preventDefault();
+      if (dragSrcEl !== this) {
+        const list = this.parentNode;
+        const draggedIndex = [...list.children].indexOf(dragSrcEl);
+        const droppedIndex = [...list.children].indexOf(this);
+        if (draggedIndex < droppedIndex) {
+          list.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          list.insertBefore(dragSrcEl, this);
+        }
+      }
+    });
+
+    item.addEventListener('dragend', function () {
+      this.classList.remove('dragging');
+    });
+  });
+}
+
+document.getElementById("save-order-btn").addEventListener("click", async () => {
+  const items = document.querySelectorAll("#menu-list .draggable-item");
+  const order = [];
+
+  items.forEach((item, index) => {
+    order.push({ id: item.dataset.id, order: index });
+  });
+
+  const res = await fetch("/header/reorder", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ order }),
+  });
+
+  const result = await res.json();
+
+  if (result.success) {
+    alert("Menu order updated successfully.");
+    await loadMenus();
+  } else {
+    alert("Failed to update order.");
+  }
+});
+
+
+// document.getElementById("saveOrderBtn").addEventListener("click", async () => {
+//   // Step 1: Collect the current order from the DOM
+//   const items = document.querySelectorAll("#menu-list .draggable-item");
+//   const order = Array.from(items).map((item, index) => ({
+//     id: item.dataset.id,
+//     order: index,
+//   }));
+//
+//   // Step 2: Send updated order to backend
+//   const res = await fetch("/header/reorder", {
+//     method: "PUT",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ order }),
+//   });
+//
+//   const result = await res.json();
+//
+//   // Step 3: Handle response
+//   if (result.success) {
+//     alert("Menu order updated successfully.");
+//     await loadMenus(); // ✅ Re-render with new order
+//   } else {
+//     alert("Failed to save order.");
+//   }
+// });
+
+
+// Call after menus are fetched
+document.addEventListener("DOMContentLoaded", async () => {
+  await fetchMenus();
+  fetchAndRenderDraggableList();
+});
+
+async function loadMenus() {
+  const res = await fetch("/header");
+  const menus = await res.json();
+
+  // ✅ Sort by menuOrder
+  menus.sort((a, b) => a.menuOrder - b.menuOrder);
+
+  const list = document.getElementById("menuList");
+  list.innerHTML = "";
+
+  menus.forEach(menu => {
+    const li = document.createElement("li");
+    li.className = "menu-item";
+    li.setAttribute("data-id", menu._id);
+    li.textContent = menu.title;
+    list.appendChild(li);
+  });
+}
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   loadMenus(); // ✅ Load sorted on page load
+// });
+
+
+  </script>
+</body>
+</html>

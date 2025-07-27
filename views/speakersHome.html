@@ -6,79 +6,126 @@
   <title>Speaker Dashboard</title>
   <link rel="stylesheet" href="/cssStyles/speakersCssStyle.css"/>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
-      margin: 20px;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .welcome {
-      font-size: 24px;
-      font-weight: bold;
-    }
-    .dashboard-buttons {
-      margin-top: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      margin-right: 10px;
-      font-weight: bold;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .form-container, .edit-container {
-      margin-top: 30px;
-      display: none;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    input[type="text"], textarea {
-      width: 100%;
-      padding: 10px;
-      font-size: 14px;
-    }
-    .story-box {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background-color: #fff;
-    }
-    .story-actions button {
-      margin-left: 10px;
-      background-color: #28a745;
-    }
-    .story-actions .delete-btn {
-      background-color: #dc3545;
-    }
+  body {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  margin: 20px;
+}
+
+/* 🧱 Flex row: profile photo left, header next to it */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  flex-wrap: wrap;
+
+}
+
+/* 👤 Profile photo */
+#profileImageContainer img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  /* border-radius: 50%; */
+  margin-right: 20px;
+}
+
+/* 📢 Welcome + buttons */
+.header-content {
+  /* flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: -120px;
+}
+
+.welcome {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.dashboard-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  font-weight: bold;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* 🚪 Logout */
+.logout-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #dc3545;
+  color: white;
+}
+
+/* 📱 Responsive */
+@media screen and (max-width: 600px) {
+  .header-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .logout-btn {
+    top: 10px;
+    right: 10px;
+  }
+
+  #profileImageContainer img {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 10px;
+  }
+
+  .welcome {
+    text-align: center;
+  }
+
+  .dashboard-buttons {
+    justify-content: center;
+  }
+}
+
   </style>
 </head>
 <body>
 
-<header>
-  <div class="welcome">Welcome, <span id="speakerName">...</span></div>
-  <div><img id="speakerImg" src="/public/images/default.jpg" width="50" height="50" style="border-radius: 50%"/></div>
-</header>
+  <div class="header-container">
+  <div id="profileImageContainer">
+    <img id="speakerImg" src="/public/images/default.jpg" />
+  </div>
 
-<div class="dashboard-buttons">
-  <button onclick="showCreate()">Create Story</button>
-  <button onclick="showEdit()">Edit Story</button>
+  <div class="header-content">
+    <div class="welcome">Welcome, <span id="speakerName">...</span></div>
+    <div class="dashboard-buttons">
+      <button onclick="showCreate()">Create Story</button>
+      <button onclick="showEdit()">Edit Story</button>
+      <button onclick="editProfile()">Edit Profile</button>
+    </div>
+  </div>
+  <button onclick="logout()" class="logout-btn">Logout</button>
 </div>
-
-<button onclick="logout()">Logout</button>
 
 <!-- Edit Section Placeholder (if needed in future) -->
 <div class="edit-container" id="editSection" style="display:none;">
@@ -108,6 +155,36 @@
       });
   }
 
+  // const email = localStorage.getItem("email");
+  // let originalIntro = "";
+  //
+  // if (!email) {
+  //   alert("You must log in first!");
+  //   window.location.href = "login.html";
+  // } else {
+  //   fetch(`/users/email/${encodeURIComponent(email)}`)
+  //     .then(response => {
+  //       if (!response.ok) throw new Error('User not found');
+  //       return response.json();
+  //     })
+  //     .then(data => {
+  //       const user = data.user || data;
+  //       document.getElementById("speakerName").innerText = user.name || email;
+  //       document.getElementById("speakerImg").src = user.profileImage || "/public/images/default.jpg";
+  //
+  //       // ✅ Set profile data
+  //       document.getElementById("currentProfileImage").src = user.profileImage || "/public/images/default.jpg";
+  //       originalIntro = user.intro || "";
+  //       document.getElementById("briefIntro").value = originalIntro;
+  //     })
+  //     .catch(error => {
+  //       console.error("Error fetching user:", error);
+  //       document.getElementById("speakerName").innerText = email;
+  //       document.getElementById("speakerImg").src = "/public/images/default.jpg";
+  //     });
+  // }
+
+
   function showCreate() {
     window.location.href = "speakerDashboardCreateButton.html";
   }
@@ -115,10 +192,15 @@
   function showEdit() {
     window.location.href = "speakersEditButton.html";
   }
+  function editProfile() {
+    window.location.href = "editProfile.html";
+  }
+
   function logout() {
     localStorage.removeItem("email");
     window.location.href = "login.html";
   }
+
 </script>
 
 </body>

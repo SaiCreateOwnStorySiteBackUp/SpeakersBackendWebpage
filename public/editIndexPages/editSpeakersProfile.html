@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Speakers Profile</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link rel="stylesheet" href="/cssStyles/editSpeakersProfile.css">
+</head>
+<body>
+  <h2>Edit Speakers Profile</h2>
+  <button id="backBtn" onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">← Dashboard</button>
+  <!-- <button onclick="window.location.href='/admin/adminDashboardUi.html'" title="Back to Dashboard">⬅ Dashboard</button> -->
+</div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search by email or topic..." oninput="filterSpeakers()" />
+    <select id="sortSelect" onchange="sortSpeakers()">
+      <option value="">Sort by</option>
+      <option value="name">Name (A-Z)</option>
+      <option value="date">Updated Date</option>
+    </select>
+  </div>
+
+  <div id="speakersContainer"></div>
+  <div class="pagination" id="pagination"></div>
+
+  <script>
+    let allSpeakers = [];
+    let filteredSpeakers = [];
+    let currentPage = 1;
+    const speakersPerPage = 2;
+
+    async function fetchSpeakers() {
+      try {
+        const res = await fetch("/users/api/speakers");
+        const data = await res.json();
+        allSpeakers = data;
+        filteredSpeakers = [...allSpeakers];
+        renderSpeakers();
+      } catch (err) {
+        console.error("Error fetching speakers:", err);
+      }
+    }
+
+    function renderSpeakers() {
+      const container = document.getElementById("speakersContainer");
+      container.innerHTML = "";
+
+      const start = (currentPage - 1) * speakersPerPage;
+      const end = start + speakersPerPage;
+      const pageSpeakers = filteredSpeakers.slice(start, end);
+
+      pageSpeakers.forEach((speaker, index) => {
+        const div = document.createElement("div");
+        div.className = "speaker-card";
+
+        const speakerName = speaker.email.split("@")[0];
+
+        div.innerHTML = `
+          <div class="speaker-image">
+            <img src="${speaker.profileImage || '/images/default-profile.png'}" alt="Profile" />
+            <input type="file" style="display:none" />
+
+          </div>
+          <div class="speaker-details">
+            <label>Email:</label>
+            <p>${speaker.email}</p>
+
+            <label>Topic:</label>
+            <input type="text" value="${speaker.topic || ""}" disabled />
+
+            <label>Brief Intro:</label>
+            <textarea disabled>${speaker.intro || ""}</textarea>
+
+            <button class="edit-btn">Edit</button>
+            <button class="update-btn" disabled>Update</button>
+          </div>
+        `;
+
+        container.appendChild(div);
+        setupCardLogic(div, speaker);
+      });
+
+      renderPagination();
+    }
+
+    function setupCardLogic(card, speaker) {
+      const fileInput = card.querySelector("input[type='file']");
+      // const changeBtn = card.querySelector(".change-photo-btn");
+      //             <button class="change-photo-btn" disabled>Change Photo</button>
+      const topicInput = card.querySelector("input[type='text']");
+      const introTextarea = card.querySelector("textarea");
+      const editBtn = card.querySelector(".edit-btn");
+      const updateBtn = card.querySelector(".update-btn");
+
+      editBtn.onclick = () => {
+        topicInput.disabled = false;
+        introTextarea.disabled = false;
+        changeBtn.disabled = false;
+        updateBtn.disabled = false;
+      };
+
+      // changeBtn.onclick = () => fileInput.click();
+
+      updateBtn.onclick = async () => {
+        const topic = topicInput.value.trim();
+        const intro = introTextarea.value.trim();
+        const file = fileInput.files[0];
+
+        const unchanged = topic === (speaker.topic || "") && intro === (speaker.intro || "") && !file;
+        if (unchanged) {
+          alert(`No changes applied for respective speaker ${speaker.email.split("@")[0]}`);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("email", speaker.email);
+        formData.append("topic", topic);
+        formData.append("intro", intro);
+        if (file) formData.append("profileImage", file);
+
+        const res = await fetch("/users/updateProfile", {
+          method: "PUT",
+          body: formData,
+        });
+
+        const result = await res.json();
+        if (result.success) {
+          alert("Profile updated successfully.");
+          fetchSpeakers();
+        } else {
+          alert("Update failed.");
+        }
+      };
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(filteredSpeakers.length / speakersPerPage);
+      const pagination = document.getElementById("pagination");
+      pagination.innerHTML = "";
+
+      const createBtn = (label, page) => {
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.disabled = page === currentPage || page < 1 || page > totalPages;
+        btn.onclick = () => {
+          currentPage = page;
+          renderSpeakers();
+        };
+        return btn;
+      };
+
+      pagination.appendChild(createBtn("<<", 1));
+      pagination.appendChild(createBtn("<", currentPage - 1));
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i;
+        btn.disabled = i === currentPage;
+        btn.onclick = () => {
+          currentPage = i;
+          renderSpeakers();
+        };
+        pagination.appendChild(btn);
+      }
+
+      pagination.appendChild(createBtn(">", currentPage + 1));
+      pagination.appendChild(createBtn(">>", totalPages));
+    }
+
+    function filterSpeakers() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      filteredSpeakers = allSpeakers.filter(s =>
+        s.email.toLowerCase().includes(query) || (s.topic || "").toLowerCase().includes(query)
+      );
+      currentPage = 1;
+      renderSpeakers();
+    }
+
+    function sortSpeakers() {
+      const type = document.getElementById("sortSelect").value;
+      if (type === "name") {
+        filteredSpeakers.sort((a, b) => a.email.localeCompare(b.email));
+      } else if (type === "date") {
+        filteredSpeakers.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      }
+      currentPage = 1;
+      renderSpeakers();
+    }
+
+    document.addEventListener("DOMContentLoaded", fetchSpeakers);
+  </script>
+</body>
+</html>
